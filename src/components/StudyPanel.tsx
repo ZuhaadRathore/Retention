@@ -175,8 +175,8 @@ interface HelpOverlayProps {
 function HelpOverlay({ onClose }: HelpOverlayProps) {
   const shortcuts = [
     { key: "Enter", description: "Submit your answer (when answer field is not focused)" },
-    { key: "N", description: "Navigate to next card" },
-    { key: "B", description: "Move current card to back of pile" },
+    { key: "N", description: "Complete card - Mark as done for this session" },
+    { key: "B", description: "Review Later - Add to end of queue" },
     { key: "?", description: "Toggle this help overlay" }
   ];
 
@@ -725,7 +725,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
       {/* Flip Card Container with Arrow Navigation */}
       <div ref={arrowContainerRef} className="flex items-start gap-4">
-        {/* Left Arrow - Move current card to back of pile */}
+        {/* Left Arrow - Review Later */}
         <button
           type="button"
           className="w-12 h-12 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-50 flex items-center justify-center text-2xl flex-shrink-0"
@@ -734,8 +734,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
           }}
           onClick={handleNavigateBack}
           disabled={busy}
-          aria-label="Move to back of pile"
-          title="Move this card to the back and continue (B)"
+          aria-label="Review Later"
+          title="Review Later - Add to end of queue (B)"
         >
           ←
         </button>
@@ -894,7 +894,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
         </div>
         </div>
 
-        {/* Right Arrow - Move to next card */}
+        {/* Right Arrow - Complete */}
         <button
           type="button"
           className="w-12 h-12 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-50 flex items-center justify-center text-2xl flex-shrink-0"
@@ -903,8 +903,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
           }}
           onClick={handleNavigateNext}
           disabled={busy}
-          aria-label="Next card"
-          title="Move to next card (N)"
+          aria-label="Complete"
+          title="Complete - Mark as done for this session (N)"
         >
           →
         </button>
