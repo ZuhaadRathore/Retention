@@ -240,6 +240,7 @@ function SessionSummary({ deckTitle, session, onRestart, onReturnHome }: Session
 
 export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: StudyPanelProps) {
   const [answer, setAnswer] = useState("");
+  const [draftAnswers, setDraftAnswers] = useState<Record<string, string>>({});
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [sessionWasRestored, setSessionWasRestored] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -249,6 +250,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const arrowContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [arrowOffset, setArrowOffset] = useState(0);
+  const previousCardIdRef = useRef<string | null>(null);
   const status = useStudyStore((state) => state.status);
   const lastAttempt = useStudyStore((state) => state.lastAttempt);
   const attemptsByCard = useStudyStore((state) => state.attemptsByCard);
@@ -301,10 +303,31 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     }
   }, []); // Only run once on mount
 
+  // Restore draft answers when navigating to a new card
   useEffect(() => {
-    setAnswer("");
-    setFormMessage(null);
-    clearError();
+    const prevCardId = previousCardIdRef.current;
+    const currentCardId = card?.id ?? null;
+
+    // Only run when card actually changes
+    if (prevCardId !== currentCardId) {
+      // Clear error and form message when changing cards
+      setFormMessage(null);
+      clearError();
+
+      // Restore draft answer for new card, or clear if no draft exists
+      if (currentCardId) {
+        setDraftAnswers(prev => {
+          const draft = prev[currentCardId];
+          setAnswer(draft ?? "");
+          return prev;
+        });
+      } else {
+        setAnswer("");
+      }
+
+      // Update ref for next transition
+      previousCardIdRef.current = currentCardId;
+    }
   }, [card?.id, clearError]);
 
   const submitCurrentAnswer = useCallback(async () => {
@@ -330,6 +353,12 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     });
     if (attempt) {
       setAnswer("");
+      // Clear draft for this card since answer was successfully submitted
+      setDraftAnswers(prev => {
+        const next = { ...prev };
+        delete next[card.id];
+        return next;
+      });
     }
     return Boolean(attempt);
   }, [answer, busy, card, submitAnswer]);
@@ -377,7 +406,11 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       return;
     }
 
-    if (sessionPhase !== "review" || !verdictForCard || busy) {
+    // Allow navigation shortcuts at any time during study session (not just after verdict)
+    if (sessionPhase !== "prompt" && sessionPhase !== "review") {
+      return;
+    }
+    if (busy) {
       return;
     }
     if (event.metaKey || event.ctrlKey || event.altKey) {
@@ -386,20 +419,20 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     const key = event.key.toLowerCase();
     if (key === "b") {
       event.preventDefault();
-      dispatchSession({ type: "backOfPile", verdict: verdictForCard.verdict });
+      handleNavigateBack();
     } else if (key === "n") {
       event.preventDefault();
-      dispatchSession({ type: "next", verdict: verdictForCard.verdict });
+      handleNavigateNext();
     }
   }, [
     answer,
     busy,
     card,
-    dispatchSession,
+    handleNavigateBack,
+    handleNavigateNext,
     mode,
     sessionPhase,
-    submitCurrentAnswer,
-    verdictForCard
+    submitCurrentAnswer
   ]);
 
   useEffect(() => {
@@ -537,6 +570,37 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     setAnswer('');
   };
 
+  // Navigation handlers that save draft before navigating
+  const handleNavigateBack = useCallback(() => {
+    if (busy) return;
+
+    // Save current answer as draft if not empty
+    if (card?.id && answer.trim()) {
+      setDraftAnswers(prev => ({
+        ...prev,
+        [card.id]: answer
+      }));
+    }
+
+    // Navigate with verdict if available, undefined otherwise
+    dispatchSession({ type: "backOfPile", verdict: verdictForCard?.verdict });
+  }, [busy, card, answer, verdictForCard, dispatchSession]);
+
+  const handleNavigateNext = useCallback(() => {
+    if (busy) return;
+
+    // Save current answer as draft if not empty
+    if (card?.id && answer.trim()) {
+      setDraftAnswers(prev => ({
+        ...prev,
+        [card.id]: answer
+      }));
+    }
+
+    // Navigate with verdict if available, undefined otherwise
+    dispatchSession({ type: "next", verdict: verdictForCard?.verdict });
+  }, [busy, card, answer, verdictForCard, dispatchSession]);
+
   const showRestorationBanner =
     sessionWasRestored &&
     sessionStartedAt &&
@@ -567,16 +631,17 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
       {/* Flip Card Container with Arrow Navigation */}
       <div ref={arrowContainerRef} className="flex items-start gap-4">
-        {/* Left Arrow - Always visible, positioned at textarea bottom */}
+        {/* Left Arrow - Move current card to back of pile */}
         <button
           type="button"
           className="w-12 h-12 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-50 flex items-center justify-center text-2xl flex-shrink-0"
           style={{
             marginTop: `${arrowOffset}px`
           }}
-          onClick={() => verdictForCard && dispatchSession({ type: "backOfPile", verdict: verdictForCard.verdict })}
-          disabled={busy || !verdictForCard}
-          aria-label="Previous card"
+          onClick={handleNavigateBack}
+          disabled={busy}
+          aria-label="Move to back of pile"
+          title="Move this card to the back and continue (B)"
         >
           ←
         </button>
@@ -735,16 +800,17 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
         </div>
         </div>
 
-        {/* Right Arrow - Always visible, positioned at textarea bottom */}
+        {/* Right Arrow - Move to next card */}
         <button
           type="button"
           className="w-12 h-12 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-50 flex items-center justify-center text-2xl flex-shrink-0"
           style={{
             marginTop: `${arrowOffset}px`
           }}
-          onClick={() => verdictForCard && dispatchSession({ type: "next", verdict: verdictForCard.verdict })}
-          disabled={busy || !verdictForCard}
+          onClick={handleNavigateNext}
+          disabled={busy}
           aria-label="Next card"
+          title="Move to next card (N)"
         >
           →
         </button>
