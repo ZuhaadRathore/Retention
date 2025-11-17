@@ -140,11 +140,13 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
   const [draft, setDraft] = useState<DeckDraft>(() => toDraft(initialDeck));
   const [error, setError] = useState<string | null>(null);
   const [cardValidations, setCardValidations] = useState<Record<string, ReturnType<typeof validateCard>>>({});
+  const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setDraft(toDraft(initialDeck));
     setError(null);
     setCardValidations({});
+    setSelectedCards(new Set());
   }, [initialDeck, mode]);
 
   // Real-time validation
@@ -231,6 +233,53 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
     }));
   };
 
+  const moveCardUp = (index: number) => {
+    if (index === 0) return;
+    setDraft((current) => {
+      const newCards = [...current.cards];
+      [newCards[index - 1], newCards[index]] = [newCards[index], newCards[index - 1]];
+      return { ...current, cards: newCards };
+    });
+  };
+
+  const moveCardDown = (index: number) => {
+    setDraft((current) => {
+      if (index === current.cards.length - 1) return current;
+      const newCards = [...current.cards];
+      [newCards[index], newCards[index + 1]] = [newCards[index + 1], newCards[index]];
+      return { ...current, cards: newCards };
+    });
+  };
+
+  const toggleCardSelection = (tempId: string) => {
+    setSelectedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(tempId)) {
+        next.delete(tempId);
+      } else {
+        next.add(tempId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllCards = () => {
+    setSelectedCards(new Set(draft.cards.map((c) => c.tempId)));
+  };
+
+  const clearSelection = () => {
+    setSelectedCards(new Set());
+  };
+
+  const bulkDeleteSelected = () => {
+    if (selectedCards.size === 0) return;
+    setDraft((current) => ({
+      ...current,
+      cards: current.cards.filter((card) => !selectedCards.has(card.tempId))
+    }));
+    setSelectedCards(new Set());
+  };
+
   return (
     <form className="flex flex-col gap-6 p-6" onSubmit={handleSubmit}>
       <div>
@@ -283,7 +332,19 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
 
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold m-0 text-text-color font-display">Cards ({draft.cards.length})</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-xl font-bold m-0 text-text-color font-display">Cards ({draft.cards.length})</h3>
+            {draft.cards.length > 1 && (
+              <button
+                type="button"
+                className="text-sm px-3 py-1.5 rounded-full border border-border-color bg-card-background text-text-color font-semibold hover:bg-paper-line"
+                onClick={selectedCards.size === draft.cards.length ? clearSelection : selectAllCards}
+                disabled={Boolean(submitting)}
+              >
+                {selectedCards.size === draft.cards.length ? "Deselect All" : "Select All"}
+              </button>
+            )}
+          </div>
           <button
             type="button"
             className="px-6 py-2.5 rounded-full bg-primary text-white font-bold hand-drawn-btn"
@@ -293,28 +354,89 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
             Add card
           </button>
         </div>
+        {selectedCards.size > 0 && (
+          <div className="mb-4 p-4 rounded-xl bg-primary/10 border-2 border-primary/40 flex justify-between items-center">
+            <p className="text-sm font-semibold text-text-color m-0">
+              {selectedCards.size} card{selectedCards.size !== 1 ? 's' : ''} selected
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-full bg-incorrect-red text-white font-bold hand-drawn-btn hover:bg-incorrect-red/90 text-sm"
+                onClick={bulkDeleteSelected}
+                disabled={Boolean(submitting) || draft.cards.length - selectedCards.size < 1}
+                title={draft.cards.length - selectedCards.size < 1 ? "Cannot delete all cards" : "Delete selected cards"}
+              >
+                Delete Selected
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-full border-2 border-border-color bg-card-background text-text-color font-semibold hand-drawn-btn hover:bg-paper-line text-sm"
+                onClick={clearSelection}
+                disabled={Boolean(submitting)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-4">
           {draft.cards.map((card, index) => {
             const validation = cardValidations[card.tempId] || {};
             const hasErrors = Object.keys(validation).length > 0;
 
             return (
-              <div key={card.tempId} className={`p-6 rounded-xl flashcard paper-texture ${hasErrors ? 'border-2 border-warning-amber/50' : ''}`}>
+              <div key={card.tempId} className={`p-6 rounded-xl flashcard paper-texture ${hasErrors ? 'border-2 border-warning-amber/50' : ''} ${selectedCards.has(card.tempId) ? 'ring-2 ring-primary' : ''}`}>
                 <div className="flex justify-between items-center mb-4">
-                  <p className="text-lg font-bold m-0 text-text-color font-display">
-                    Card {index + 1}
-                    {hasErrors && <span className="ml-2 text-warning-amber text-sm">⚠</span>}
-                  </p>
-                  {draft.cards.length > 1 && (
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded-full bg-incorrect-red text-white font-bold hand-drawn-btn"
-                      onClick={() => removeCard(card.tempId)}
-                      disabled={Boolean(submitting)}
-                    >
-                      Remove
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {draft.cards.length > 1 && (
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 rounded border-2 border-border-color cursor-pointer"
+                        checked={selectedCards.has(card.tempId)}
+                        onChange={() => toggleCardSelection(card.tempId)}
+                        disabled={Boolean(submitting)}
+                      />
+                    )}
+                    <p className="text-lg font-bold m-0 text-text-color font-display">
+                      Card {index + 1}
+                      {hasErrors && <span className="ml-2 text-warning-amber text-sm">⚠</span>}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {draft.cards.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-30 disabled:cursor-not-allowed"
+                          onClick={() => moveCardUp(index)}
+                          disabled={Boolean(submitting) || index === 0}
+                          title="Move card up"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line disabled:opacity-30 disabled:cursor-not-allowed"
+                          onClick={() => moveCardDown(index)}
+                          disabled={Boolean(submitting) || index === draft.cards.length - 1}
+                          title="Move card down"
+                        >
+                          ↓
+                        </button>
+                      </>
+                    )}
+                    {draft.cards.length > 1 && (
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-full bg-incorrect-red text-white font-bold hand-drawn-btn hover:bg-incorrect-red/90"
+                        onClick={() => removeCard(card.tempId)}
+                        disabled={Boolean(submitting)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-2 mb-4">
                   <label className="text-base font-semibold text-text-color" htmlFor={"prompt-" + card.tempId}>

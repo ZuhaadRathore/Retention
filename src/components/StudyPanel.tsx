@@ -29,36 +29,108 @@ function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString();
 }
 
-function AttemptHistory({ attempts }: { attempts: AttemptRecord[] }) {
+interface AttemptHistoryProps {
+  attempts: AttemptRecord[];
+  onDeleteAttempt?: (attemptId: string) => void;
+}
+
+function AttemptHistory({ attempts, onDeleteAttempt }: AttemptHistoryProps) {
+  const [expandedAttempt, setExpandedAttempt] = useState<string | null>(null);
+
   if (!attempts.length) {
     return <p className="text-text-muted text-sm italic">No prior attempts logged for this card.</p>;
   }
 
+  const toggleExpand = (attemptId: string) => {
+    setExpandedAttempt(prev => prev === attemptId ? null : attemptId);
+  };
+
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead>
-        <tr>
-          <th className="text-left border-b-2 border-border-color py-2 text-text-color font-semibold">When</th>
-          <th className="text-left border-b-2 border-border-color py-2 text-text-color font-semibold">Verdict</th>
-          <th className="text-left border-b-2 border-border-color py-2 text-text-color font-semibold">Score</th>
-          <th className="text-left border-b-2 border-border-color py-2 text-text-color font-semibold">Cosine</th>
-          <th className="text-left border-b-2 border-border-color py-2 text-text-color font-semibold">Coverage</th>
-        </tr>
-      </thead>
-      <tbody>
-        {attempts.map((attempt) => (
-          <tr key={attempt.id}>
-            <td className="py-2 border-b border-border-color/30 text-text-color">{formatTimestamp(attempt.createdAt)}</td>
-            <td className="py-2 border-b border-border-color/30 text-text-color">
-              <span>{verdictPalette[attempt.verdict]?.label ?? attempt.verdict}</span>
-            </td>
-            <td className="py-2 border-b border-border-color/30 text-text-color">{attempt.score.toFixed(2)}</td>
-            <td className="py-2 border-b border-border-color/30 text-text-color">{attempt.cosine.toFixed(2)}</td>
-            <td className="py-2 border-b border-border-color/30 text-text-color">{attempt.coverage.toFixed(2)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="flex flex-col gap-2">
+      {attempts.map((attempt) => {
+        const isExpanded = expandedAttempt === attempt.id;
+        const style = verdictPalette[attempt.verdict];
+
+        return (
+          <div
+            key={attempt.id}
+            className="border-2 border-border-color rounded-lg overflow-hidden bg-card-background shadow-sm"
+          >
+            {/* Summary Row - Clickable */}
+            <button
+              type="button"
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-paper-line transition-colors text-left"
+              onClick={() => toggleExpand(attempt.id)}
+            >
+              <span className="text-lg flex-shrink-0">{isExpanded ? '▼' : '▶'}</span>
+              <div className="flex-1 grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center text-sm">
+                <span className="text-text-muted truncate">{formatTimestamp(attempt.createdAt)}</span>
+                <span
+                  className="px-2 py-1 rounded font-semibold text-xs"
+                  style={{ backgroundColor: style?.bg, color: style?.color }}
+                >
+                  {style?.label ?? attempt.verdict}
+                </span>
+                <span className="text-text-color font-mono">Score: {attempt.score.toFixed(2)}</span>
+                <span className="text-text-muted text-xs">
+                  Cosine: {attempt.cosine.toFixed(2)} | Coverage: {attempt.coverage.toFixed(2)}
+                </span>
+              </div>
+            </button>
+
+            {/* Expanded Details */}
+            {isExpanded && (
+              <div className="px-4 pb-4 border-t-2 border-border-color/30 pt-3">
+                {/* User Answer */}
+                {attempt.userAnswer && (
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Your Answer</p>
+                    <p className="text-sm text-text-color bg-card-background/60 p-3 rounded-lg border border-border-color/30">
+                      {attempt.userAnswer}
+                    </p>
+                  </div>
+                )}
+
+                {/* AI Feedback */}
+                {attempt.feedback && (
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">AI Feedback</p>
+                    <p className="text-sm text-text-color bg-card-background/60 p-3 rounded-lg border border-border-color/30 whitespace-pre-wrap">
+                      {attempt.feedback}
+                    </p>
+                  </div>
+                )}
+
+                {/* Missing Keypoints */}
+                {attempt.missingKeypoints && attempt.missingKeypoints.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Missing Keypoints</p>
+                    <ul className="text-sm text-text-color bg-warning-amber/10 p-3 rounded-lg border border-warning-amber/30 list-disc pl-5">
+                      {attempt.missingKeypoints.map((keypoint, idx) => (
+                        <li key={idx}>{keypoint}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-3">
+                  {onDeleteAttempt && (
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-incorrect-red text-white text-xs font-semibold hover:bg-incorrect-red/90"
+                      onClick={() => onDeleteAttempt(attempt.id)}
+                    >
+                      Delete Attempt
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -351,6 +423,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
   const [showAlternativeAnswersInfo, setShowAlternativeAnswersInfo] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const [showReportIssue, setShowReportIssue] = useState(false);
+  const [reportComment, setReportComment] = useState("");
   const { toasts, showToast, closeToast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -560,6 +634,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   useEffect(() => {
     setIsFlipped(false);
     setShowHints(false);
+    setShowReportIssue(false);
+    setReportComment("");
   }, [card?.id]);
 
   // Auto-flip to back after submitting to show verdict
@@ -720,6 +796,37 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     // Navigate with verdict if available, undefined otherwise
     dispatchSession({ type: "next", verdict: verdictForCard?.verdict });
   }, [busy, card, answer, verdictForCard, dispatchSession]);
+
+  const handleReportIssue = useCallback(() => {
+    if (!card || !verdictForCard) return;
+
+    // Create report data
+    const reportData = {
+      cardId: card.id,
+      prompt: card.prompt,
+      expectedAnswer: card.answer,
+      userAnswer: verdictForCard.userAnswer,
+      aiVerdict: verdictForCard.verdict,
+      aiFeedback: verdictForCard.feedback,
+      score: verdictForCard.score,
+      cosine: verdictForCard.cosine,
+      coverage: verdictForCard.coverage,
+      userComment: reportComment.trim(),
+      timestamp: new Date().toISOString()
+    };
+
+    // For now, just copy to clipboard and show toast
+    // In a real implementation, this would send to a backend endpoint
+    navigator.clipboard.writeText(JSON.stringify(reportData, null, 2))
+      .then(() => {
+        showToast("Issue report copied to clipboard. Please share with the development team.", "success");
+        setShowReportIssue(false);
+        setReportComment("");
+      })
+      .catch(() => {
+        showToast("Failed to copy report. Please try again.", "error");
+      });
+  }, [card, verdictForCard, reportComment, showToast]);
 
   const showRestorationBanner =
     sessionWasRestored &&
@@ -980,6 +1087,75 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                           >
                             What are alternative answers?
                           </button>
+                        </div>
+                      )}
+
+                      {/* Report Issue Section */}
+                      <div className="mt-4">
+                        {!showReportIssue ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowReportIssue(true)}
+                            className="text-xs text-text-muted hover:text-text-color underline transition-colors flex items-center gap-1"
+                          >
+                            <span>⚠</span>
+                            <span>Disagree with this verdict? Report an issue</span>
+                          </button>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-card-background/90 border-2 border-warning-amber/40">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-sm font-bold text-text-color m-0">Report Grading Issue</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowReportIssue(false);
+                                  setReportComment("");
+                                }}
+                                className="text-text-muted hover:text-text-color text-lg"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <p className="text-xs text-text-muted mb-3">
+                              Describe why you think the AI's verdict is incorrect. This will help improve the grading system.
+                            </p>
+                            <textarea
+                              className="w-full hand-drawn-input text-text-color focus:outline-none text-sm min-h-[80px] resize-y mb-3"
+                              value={reportComment}
+                              onChange={(e) => setReportComment(e.target.value)}
+                              placeholder="e.g., My answer covered all the key points but was marked as missing keypoints..."
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={handleReportIssue}
+                                disabled={!reportComment.trim()}
+                                className="px-4 py-2 rounded-full bg-primary text-white font-semibold text-xs hand-drawn-btn hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Submit Report
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowReportIssue(false);
+                                  setReportComment("");
+                                }}
+                                className="px-4 py-2 rounded-full border-2 border-border-color bg-card-background text-text-color font-semibold text-xs hand-drawn-btn hover:bg-paper-line"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Attempt History */}
+                      {attempts.length > 0 && (
+                        <div className="mt-6">
+                          <h4 className="text-base font-bold text-text-color mb-3 font-display">
+                            Previous Attempts ({attempts.length})
+                          </h4>
+                          <AttemptHistory attempts={attempts} />
                         </div>
                       )}
                     </div>
