@@ -189,4 +189,27 @@ body {
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
     }
+
+    /* Toast animations */
+    @keyframes slide-in-right {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-in-right {
+        animation: slide-in-right 0.3s ease-out;
+    }
+
+    /* Hand-drawn card style for toasts and overlays */
+    .hand-drawn-card {
+        box-shadow:
+            3px 3px 0px 0px rgba(139, 69, 19, 0.2),
+            6px 6px 0px 0px rgba(139, 69, 19, 0.1);
+    }
 }
