@@ -6,6 +6,8 @@ import { useBackendStore } from "../store/backendStore";
 import type { CardSummary, CardPayload } from "../types/deck";
 import type { AttemptRecord } from "../types/study";
 import type { SessionQueueState } from "../store/sessionQueue";
+import { useToast, ToastContainer } from "./Toast";
+import { AlternativeAnswersInfo } from "./AlternativeAnswersInfo";
 
 interface StudyPanelProps {
   card: CardSummary | null;
@@ -313,6 +315,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const [showDetails, setShowDetails] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
+  const [showAlternativeAnswersInfo, setShowAlternativeAnswersInfo] = useState(false);
+  const { toasts, showToast, closeToast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const arrowContainerRef = useRef<HTMLDivElement>(null);
@@ -613,6 +617,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
     // Don't add if it's already in the list
     if (currentAlternatives.includes(userAnswer)) {
+      showToast("This answer is already in your accepted alternatives", "info");
       return;
     }
 
@@ -639,6 +644,9 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       alternativeAnswers: updatedAlternatives
     };
     dispatchSession({ type: "syncCard", card: updatedCard });
+
+    // Show success notification
+    showToast("Added to accepted alternatives! Try your answer again.", "success");
 
     // Reset to front of card to try again with the new alternative answer
     setIsFlipped(false);
@@ -685,6 +693,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
   return (
     <div ref={containerRef} className="mt-6">
+      <ToastContainer toasts={toasts} onClose={closeToast} />
       {showRestorationBanner && (
         <SessionRestorationBanner
           deckTitle={sessionDeck.title}
@@ -871,15 +880,30 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                           >
                             Try Again
                           </button>
-                          {(verdictForCard.verdict === 'almost' || verdictForCard.verdict === 'missing') && (
-                            <button
-                              type="button"
-                              className="flex-1 px-6 py-3 rounded-full bg-correct-green text-white font-bold hand-drawn-btn hover:bg-correct-green/90 text-base"
-                              onClick={handleMarkAsCorrect}
-                            >
-                              Mark as Correct
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className="flex-1 px-6 py-3 rounded-full bg-correct-green text-white font-bold hand-drawn-btn hover:bg-correct-green/90 text-base relative group"
+                            onClick={handleMarkAsCorrect}
+                            title="Add your answer as an accepted alternative for this card"
+                          >
+                            Accept My Answer
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-text-color text-card-background text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
+                              Add your answer as an accepted alternative
+                            </span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Alternative Answers Info Link */}
+                      {(verdictForCard.verdict === 'incorrect' || verdictForCard.verdict === 'almost' || verdictForCard.verdict === 'missing') && (
+                        <div className="mt-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowAlternativeAnswersInfo(true)}
+                            className="text-xs text-primary hover:text-primary/80 underline transition-colors"
+                          >
+                            What are alternative answers?
+                          </button>
                         </div>
                       )}
                     </div>
@@ -922,6 +946,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
       {/* Help Overlay */}
       {showHelpOverlay && <HelpOverlay onClose={() => setShowHelpOverlay(false)} />}
+      {showAlternativeAnswersInfo && <AlternativeAnswersInfo onClose={() => setShowAlternativeAnswersInfo(false)} />}
     </div>
   );
 }
