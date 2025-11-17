@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Unified build and test script for Flash-AI sidecar.
+Unified build and test script for Retention sidecar.
 Downloads model, builds sidecar, and runs comprehensive tests.
 """
 import argparse
@@ -47,7 +47,7 @@ def run_command(cmd: list, description: str, cwd: Path) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Build and test Flash-AI sidecar with bundled model"
+        description="Build and test Retention sidecar with bundled model"
     )
     parser.add_argument(
         "--skip-download",
@@ -110,7 +110,7 @@ def main():
 
     # Print next steps
     print(f"{Colors.BOLD}Next steps:{Colors.RESET}")
-    print("  1. Run the sidecar: ./src-tauri/binaries/windows/flash-ai-sidecar.exe")
+    print("  1. Run the sidecar: ./src-tauri/binaries/windows/retention-sidecar.exe")
     print("  2. Build the full app: pnpm tauri build")
     print()
 

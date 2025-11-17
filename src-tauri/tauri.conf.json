@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "Flash-AI",
+    "productName": "Retention",
     "version": "0.1.0"
   },
   "tauri": {
@@ -28,7 +28,7 @@
     },
     "bundle": {
       "active": true,
-      "identifier": "com.flashai.app",
+      "identifier": "com.retention.app",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -57,7 +57,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Flash-AI",
+        "title": "Retention",
         "width": 1280,
         "height": 800,
         "resizable": true

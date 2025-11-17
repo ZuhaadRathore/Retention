@@ -3,11 +3,11 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flash-ai-sidecar"
+name = "retention-sidecar"
 version = "0.1.0"
-description = "Local FastAPI sidecar powering Flash-AI scoring"
+description = "Local FastAPI sidecar powering Retention - AI-powered flashcard learning"
 readme = "README.md"
-authors = [{ name = "Flash-AI Team" }]
+authors = [{ name = "Retention Team" }]
 requires-python = ">=3.10"
 dependencies = [
   "fastapi>=0.110,<0.112",
@@ -28,7 +28,7 @@ dev = [
 ]
 
 [project.scripts]
-flash-ai-init-db = "python_sidecar.cli:init_db"
+retention-init-db = "python_sidecar.cli:init_db"
 
 [tool.setuptools.packages.find]
 where = ["."]

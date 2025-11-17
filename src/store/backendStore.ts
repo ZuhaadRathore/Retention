@@ -1,6 +1,6 @@
 /**
  * Backend Store
- * Manages connection state and health checks for the Flash-AI backend server
+ * Manages connection state and health checks for the Retention backend server
  * (Previously sidecarStore - refactored for client-server architecture)
  */
 

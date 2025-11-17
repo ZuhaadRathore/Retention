@@ -1,6 +1,6 @@
 /**
  * API Service
- * Handles all HTTP communication with the Flash-AI backend server
+ * Handles all HTTP communication with the Retention backend server
  */
 
 import { config, deckUrl, cardAttemptsUrl, deckBulkUrl } from "../config/api";

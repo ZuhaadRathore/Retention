@@ -1,8 +1,8 @@
 [package]
-name = "flash-ai"
+name = "retention"
 version = "0.1.0"
 edition = "2021"
-description = "Flash-AI desktop shell"
+description = "AI-powered flashcard app - Learn it. Keep it. Make it stick."
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

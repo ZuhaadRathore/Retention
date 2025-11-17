@@ -26,7 +26,7 @@ from .models import (
 
 
 def _default_data_dir() -> Path:
-    override = os.getenv("FLASH_AI_DATA_DIR")
+    override = os.getenv("RETENTION_DATA_DIR")
     if override:
         return Path(override).expanduser()
 
@@ -39,11 +39,11 @@ def _default_data_dir() -> Path:
         base = os.getenv("XDG_DATA_HOME")
         root = Path(base) if base else Path.home() / ".local" / "share"
 
-    return root / "Flash-AI"
+    return root / "Retention"
 
 
 DATA_DIR = _default_data_dir()
-DB_PATH = DATA_DIR / "flash_ai.sqlite"
+DB_PATH = DATA_DIR / "retention.sqlite"
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;

@@ -29,8 +29,8 @@ function App() {
       <aside className="w-72 bg-card-background/60 p-6 flex flex-col justify-between border-r-4 border-border-color shadow-lg">
         <div>
           <div className="flex flex-col mb-10 p-3">
-            <h1 className="text-primary text-5xl font-bold leading-tight font-display tracking-tight">Flash AI</h1>
-            <p className="text-text-muted text-base font-medium mt-2">Study smarter with paper cards</p>
+            <h1 className="text-primary text-5xl font-bold leading-tight font-display tracking-tight">Retention</h1>
+            <p className="text-text-muted text-base font-medium mt-2">Learn it. Keep it. Make it stick.</p>
           </div>
           <div>
             <DeckList />

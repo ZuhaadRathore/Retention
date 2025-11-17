@@ -1,3 +1,3 @@
-"""Flash-AI Python sidecar package."""
+"""Retention Python sidecar package."""
 
 __all__ = ["app"]
