@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash AI - Smart Flashcard Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Gochi+Hand&display=swap" rel="stylesheet">
+    <style>
+        /* Tailwind configuration matching the app */
+        @tailwind base;
+        @tailwind components;
+        @tailwind utilities;
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hand-drawn {
+            font-family: 'Gochi Hand', cursive;
+        }
+
+        /* Paper texture background */
+        .paper-texture {
+            background-color: #FFF8E7;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 31px,
+                    rgba(139, 69, 19, 0.1) 31px,
+                    rgba(139, 69, 19, 0.1) 32px
+                ),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+
+        /* Hand-drawn button effect */
+        .hand-drawn-btn {
+            position: relative;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            border: 2px solid #654321;
+            box-shadow:
+                4px 4px 0px rgba(101, 67, 33, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.1s ease;
+        }
+
+        .hand-drawn-btn:hover {
+            transform: translate(1px, 1px);
+            box-shadow:
+                3px 3px 0px rgba(101, 67, 33, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .hand-drawn-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow:
+                0px 0px 0px rgba(101, 67, 33, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        /* Flashcard style */
+        .flashcard {
+            background: linear-gradient(to bottom, #FFFEF9 0%, #FFF9F0 100%);
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.1),
+                0 8px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        /* Feature card */
+        .feature-card {
+            background: linear-gradient(to bottom, #FFFEF9 0%, #FFF9F0 100%);
+            border: 2px solid rgba(139, 69, 19, 0.2);
+            box-shadow:
+                3px 3px 0px rgba(139, 69, 19, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                5px 5px 0px rgba(139, 69, 19, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        /* Download button styles */
+        .download-btn {
+            background: linear-gradient(to bottom, #FFFEF9 0%, #FFF9F0 100%);
+            border: 2px solid #8B4513;
+            box-shadow:
+                4px 4px 0px rgba(139, 69, 19, 0.2);
+            transition: all 0.1s ease;
+        }
+
+        .download-btn:hover {
+            transform: translate(1px, 1px);
+            box-shadow:
+                3px 3px 0px rgba(139, 69, 19, 0.2);
+            background: linear-gradient(to bottom, #FFF9F0 0%, #FFF4E0 100%);
+        }
+
+        .download-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow:
+                0px 0px 0px rgba(139, 69, 19, 0.2);
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Hero gradient overlay */
+        .hero-gradient {
+            background: linear-gradient(135deg, rgba(139, 69, 19, 0.05) 0%, rgba(160, 82, 45, 0.05) 100%);
+        }
+    </style>
+</head>
+<body class="paper-texture min-h-screen">
+    <!-- Header/Navigation -->
+    <header class="sticky top-0 z-50 backdrop-blur-sm bg-[#FFF8E7]/90 border-b-2 border-[#8B4513]/20">
+        <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-[#8B4513] to-[#A0522D] rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    ⚡
+                </div>
+                <h1 class="text-2xl font-bold text-[#8B4513] hand-drawn">Flash AI</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="#features" class="text-[#654321] hover:text-[#8B4513] font-medium transition">Features</a>
+                <a href="#download" class="text-[#654321] hover:text-[#8B4513] font-medium transition">Download</a>
+                <a href="#about" class="text-[#654321] hover:text-[#8B4513] font-medium transition">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="container mx-auto px-6 py-20 lg:py-32">
+        <div class="max-w-5xl mx-auto text-center">
+            <div class="inline-block flashcard px-8 py-3 rounded-full mb-6">
+                <span class="text-[#8B4513] font-semibold text-sm uppercase tracking-wide">AI-Powered Learning</span>
+            </div>
+            <h2 class="text-5xl lg:text-7xl font-bold text-[#654321] mb-6 hand-drawn leading-tight">
+                Master Anything with<br/>Smart Flashcards
+            </h2>
+            <p class="text-xl text-[#654321]/80 mb-12 max-w-2xl mx-auto leading-relaxed">
+                Flash AI uses artificial intelligence to help you learn faster and retain more.
+                Create flashcards, study with AI-powered feedback, and track your progress.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="#download" class="hand-drawn-btn text-white px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center space-x-2">
+                    <span>⬇️</span>
+                    <span>Download Now</span>
+                </a>
+                <a href="#features" class="download-btn text-[#8B4513] px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center space-x-2">
+                    <span>Learn More</span>
+                    <span>→</span>
+                </a>
+            </div>
+            <p class="mt-6 text-sm text-[#654321]/60">
+                Available for macOS, Windows, and Linux
+            </p>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="container mx-auto px-6 py-20">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl lg:text-5xl font-bold text-[#654321] mb-4 hand-drawn">
+                    Why Choose Flash AI?
+                </h3>
+                <p class="text-lg text-[#654321]/70">
+                    Powerful features designed to supercharge your learning
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">🤖</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">AI-Powered Grading</h4>
+                    <p class="text-[#654321]/70">
+                        Get instant, intelligent feedback on your answers. Our AI understands context and provides detailed corrections.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">📚</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Smart Deck Management</h4>
+                    <p class="text-[#654321]/70">
+                        Organize your flashcards into decks. Track progress, stats, and performance for each deck.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">✍️</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Keypoint Learning</h4>
+                    <p class="text-[#654321]/70">
+                        Define key points for each card. AI validates your understanding against these critical concepts.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Progress Tracking</h4>
+                    <p class="text-[#654321]/70">
+                        Monitor your learning journey with detailed stats, attempt history, and performance analytics.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">🎨</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Beautiful Design</h4>
+                    <p class="text-[#654321]/70">
+                        Paper-themed interface with hand-drawn elements creates an engaging, distraction-free learning environment.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card p-8 rounded-2xl">
+                    <div class="text-4xl mb-4">⚡</div>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Offline-First</h4>
+                    <p class="text-[#654321]/70">
+                        Native desktop app that works offline. Your data stays on your device, synced locally.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="container mx-auto px-6 py-20">
+        <div class="max-w-4xl mx-auto">
+            <div class="flashcard p-12 rounded-3xl text-center">
+                <h3 class="text-4xl lg:text-5xl font-bold text-[#654321] mb-4 hand-drawn">
+                    Download Flash AI
+                </h3>
+                <p class="text-lg text-[#654321]/70 mb-12">
+                    Choose your platform and start learning smarter today
+                </p>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- macOS Download -->
+                    <div class="download-btn p-6 rounded-2xl text-center group cursor-pointer">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🍎</div>
+                        <h4 class="text-xl font-bold text-[#8B4513] mb-2">macOS</h4>
+                        <p class="text-sm text-[#654321]/60 mb-4">Apple Silicon & Intel</p>
+                        <div class="text-[#8B4513] font-semibold">Download</div>
+                        <div class="text-xs text-[#654321]/50 mt-2">macOS 11.0+</div>
+                    </div>
+
+                    <!-- Windows Download -->
+                    <div class="download-btn p-6 rounded-2xl text-center group cursor-pointer">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🪟</div>
+                        <h4 class="text-xl font-bold text-[#8B4513] mb-2">Windows</h4>
+                        <p class="text-sm text-[#654321]/60 mb-4">64-bit Installer</p>
+                        <div class="text-[#8B4513] font-semibold">Download</div>
+                        <div class="text-xs text-[#654321]/50 mt-2">Windows 10+</div>
+                    </div>
+
+                    <!-- Linux Download -->
+                    <div class="download-btn p-6 rounded-2xl text-center group cursor-pointer">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🐧</div>
+                        <h4 class="text-xl font-bold text-[#8B4513] mb-2">Linux</h4>
+                        <p class="text-sm text-[#654321]/60 mb-4">AppImage / .deb</p>
+                        <div class="text-[#8B4513] font-semibold">Download</div>
+                        <div class="text-xs text-[#654321]/50 mt-2">Ubuntu 20.04+</div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-4 bg-[#8B4513]/5 rounded-xl border border-[#8B4513]/20">
+                    <p class="text-sm text-[#654321]/70">
+                        <strong>Note:</strong> Flash AI is free and open-source. All releases are available on our
+                        <a href="#" class="text-[#8B4513] hover:underline font-semibold">GitHub repository</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="container mx-auto px-6 py-20">
+        <div class="max-w-3xl mx-auto">
+            <div class="feature-card p-12 rounded-3xl">
+                <h3 class="text-4xl font-bold text-[#654321] mb-6 hand-drawn text-center">
+                    About Flash AI
+                </h3>
+                <div class="space-y-4 text-[#654321]/80 leading-relaxed">
+                    <p>
+                        Flash AI is a modern flashcard application that combines the proven effectiveness of
+                        spaced repetition with the power of artificial intelligence. Whether you're a student
+                        preparing for exams, a professional learning new skills, or a lifelong learner exploring
+                        new topics, Flash AI adapts to your learning style.
+                    </p>
+                    <p>
+                        Built with cutting-edge technology including React, TypeScript, and Tauri, Flash AI
+                        delivers a native desktop experience that's fast, reliable, and works completely offline.
+                        Your data stays on your device, giving you full control and privacy.
+                    </p>
+                    <p>
+                        The AI-powered grading system provides intelligent feedback on your answers, helping you
+                        understand not just what you got wrong, but why. This accelerates learning and helps
+                        build deeper understanding of complex topics.
+                    </p>
+                </div>
+
+                <div class="mt-8 pt-8 border-t border-[#8B4513]/20">
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-4">Key Technologies</h4>
+                    <div class="flex flex-wrap gap-3">
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            React + TypeScript
+                        </span>
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            Tauri Desktop
+                        </span>
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            FastAPI Backend
+                        </span>
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            AI-Powered
+                        </span>
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            Tailwind CSS
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t-2 border-[#8B4513]/20 mt-20">
+        <div class="container mx-auto px-6 py-12">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid md:grid-cols-4 gap-8 mb-8">
+                    <div class="col-span-2">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-gradient-to-br from-[#8B4513] to-[#A0522D] rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                                ⚡
+                            </div>
+                            <h1 class="text-2xl font-bold text-[#8B4513] hand-drawn">Flash AI</h1>
+                        </div>
+                        <p class="text-[#654321]/70 mb-4">
+                            Smart flashcard learning powered by AI
+                        </p>
+                    </div>
+
+                    <div>
+                        <h5 class="font-bold text-[#8B4513] mb-3">Product</h5>
+                        <ul class="space-y-2 text-[#654321]/70">
+                            <li><a href="#features" class="hover:text-[#8B4513] transition">Features</a></li>
+                            <li><a href="#download" class="hover:text-[#8B4513] transition">Download</a></li>
+                            <li><a href="#about" class="hover:text-[#8B4513] transition">About</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h5 class="font-bold text-[#8B4513] mb-3">Resources</h5>
+                        <ul class="space-y-2 text-[#654321]/70">
+                            <li><a href="#" class="hover:text-[#8B4513] transition">Documentation</a></li>
+                            <li><a href="#" class="hover:text-[#8B4513] transition">GitHub</a></li>
+                            <li><a href="#" class="hover:text-[#8B4513] transition">Support</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t border-[#8B4513]/20 flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-[#654321]/60 text-sm">
+                        © 2025 Flash AI. All rights reserved.
+                    </p>
+                    <div class="flex space-x-6 mt-4 md:mt-0">
+                        <a href="#" class="text-[#654321]/60 hover:text-[#8B4513] transition text-sm">Privacy Policy</a>
+                        <a href="#" class="text-[#654321]/60 hover:text-[#8B4513] transition text-sm">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
