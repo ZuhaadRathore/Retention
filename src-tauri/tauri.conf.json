@@ -21,8 +21,8 @@
       "http": {
         "request": true,
         "scope": [
-          "http://localhost:8000/*",
-          "http://127.0.0.1:8000/*"
+          "http://localhost:27888/*",
+          "http://127.0.0.1:27888/*"
         ]
       }
     },
@@ -66,11 +66,6 @@
     "security": {
       "csp": null,
       "dangerousRemoteDomainIpcAccess": [
-        {
-          "domain": "about:blank",
-          "windows": ["main"],
-          "enableTauriAPI": true
-        },
         {
           "domain": "localhost:1420",
           "windows": ["main"],

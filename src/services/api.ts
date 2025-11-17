@@ -119,12 +119,17 @@ class ApiClient {
   }
 
   /**
-   * Generic fetch wrapper with error handling
+   * Generic fetch wrapper with error handling and timeout
    */
   private async request<T>(
     url: string,
-    options?: RequestInit
+    options?: RequestInit,
+    timeoutMs: number = 30000 // 30 second default timeout
   ): Promise<T> {
+    // Security: Add timeout to prevent indefinite hangs
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -132,7 +137,10 @@ class ApiClient {
           "Content-Type": "application/json",
           ...options?.headers,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -146,7 +154,12 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
+      clearTimeout(timeoutId);
+
       if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          throw new Error(`Request timeout after ${timeoutMs}ms`);
+        }
         throw error;
       }
       throw new Error(`Request failed: ${String(error)}`);

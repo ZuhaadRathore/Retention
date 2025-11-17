@@ -135,23 +135,34 @@ class Database:
     def __init__(self) -> None:
         self._connection: Optional[aiosqlite.Connection] = None
         self._state: str = "cold"
+        self._init_lock: Optional[asyncio.Lock] = None
 
     async def initialize(self) -> None:
-        self._state = "initializing"
-        try:
-            DATA_DIR.mkdir(parents=True, exist_ok=True)
-            self._connection = await aiosqlite.connect(DB_PATH)
-            self._connection.row_factory = aiosqlite.Row
-            await self._connection.executescript(SCHEMA)
-            await self._migrate_archived_column()
-            await self._migrate_alternative_answers_column()
-            await self._connection.commit()
-            await self._seed_if_empty()
-        except Exception:
-            self._state = "error"
-            raise
-        else:
-            self._state = "ready"
+        # Lazy initialization of lock to avoid event loop issues
+        if self._init_lock is None:
+            self._init_lock = asyncio.Lock()
+
+        # Prevent concurrent initialization
+        async with self._init_lock:
+            # If already initialized or initializing, return early
+            if self._state in ("ready", "initializing"):
+                return
+
+            self._state = "initializing"
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                self._connection = await aiosqlite.connect(DB_PATH)
+                self._connection.row_factory = aiosqlite.Row
+                await self._connection.executescript(SCHEMA)
+                await self._migrate_archived_column()
+                await self._migrate_alternative_answers_column()
+                await self._connection.commit()
+                await self._seed_if_empty()
+            except Exception:
+                self._state = "error"
+                raise
+            else:
+                self._state = "ready"
 
     async def close(self) -> None:
         if self._connection is not None:
