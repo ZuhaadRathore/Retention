@@ -1,4 +1,4 @@
-# Flash-AI .gitignore
+# Retention .gitignore
 # Comprehensive ignore patterns for Tauri + React + Python project
 
 # ============================================
@@ -73,7 +73,7 @@ python_sidecar/__pycache__/
 
 # PyInstaller spec files (keep custom ones, but ignore generated)
 # Uncomment if you want to track your spec file
-# !flash-ai-sidecar.spec
+# !retention-sidecar.spec
 
 # ============================================
 # Sidecar Binaries

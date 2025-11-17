@@ -244,9 +244,9 @@ export function DeckDetails() {
       return;
     }
     const handleCreateRequest = () => setMode("create");
-    window.addEventListener("flash-ai:create-deck", handleCreateRequest);
+    window.addEventListener("retention:create-deck", handleCreateRequest);
     return () => {
-      window.removeEventListener("flash-ai:create-deck", handleCreateRequest);
+      window.removeEventListener("retention:create-deck", handleCreateRequest);
     };
   }, []);
 

@@ -4,7 +4,7 @@ function requestDeckCreation() {
   if (typeof window === "undefined") {
     return;
   }
-  window.dispatchEvent(new Event("flash-ai:create-deck"));
+  window.dispatchEvent(new Event("retention:create-deck"));
 }
 
 export function DeckList() {

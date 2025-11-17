@@ -242,7 +242,7 @@ export const useStudyStore = create<StudyState>()(
   }
     }),
     {
-      name: "flash-ai-study-session",
+      name: "retention-study-session",
       storage: createJSONStorage(() => localStorage),
       version: 1,
       partialize: (state) => ({

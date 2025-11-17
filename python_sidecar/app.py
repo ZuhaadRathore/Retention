@@ -10,7 +10,7 @@ from .db import Database
 from .models import AttemptRecord, BulkCardOperation, DeckIn, DeckRecord, DeckUpdate, HealthStatus, RateRequest, ScoreRequest
 from .scoring import get_model_cache_status, score_answer, warm_model_cache
 
-app = FastAPI(title="Flash-AI Backend", version="0.1.0")
+app = FastAPI(title="Retention Backend", version="0.1.0")
 
 # Configure CORS
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:1420,http://127.0.0.1:1420,https://tauri.localhost").split(",")

@@ -8,9 +8,9 @@ from pathlib import Path
 
 
 PLATFORM_TARGETS = {
-    "windows": ("windows", "flash-ai-sidecar.exe"),
-    "linux": ("linux", "flash-ai-sidecar"),
-    "macos": ("macos", "flash-ai-sidecar")
+    "windows": ("windows", "retention-sidecar.exe"),
+    "linux": ("linux", "retention-sidecar"),
+    "macos": ("macos", "retention-sidecar")
 }
 
 
@@ -84,7 +84,7 @@ def download_model_for_bundle(project_root: Path) -> bool:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build the Flash-AI sidecar using PyInstaller and stage it for Tauri bundling."
+        description="Build the Retention sidecar using PyInstaller and stage it for Tauri bundling."
     )
     parser.add_argument(
         "--platform",
@@ -100,7 +100,7 @@ def main() -> None:
     parser.add_argument(
         "--spec",
         type=Path,
-        default=Path("flash-ai-sidecar.spec"),
+        default=Path("retention-sidecar.spec"),
         help="Path to the PyInstaller spec file."
     )
     parser.add_argument(

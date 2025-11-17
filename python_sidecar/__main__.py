@@ -24,7 +24,7 @@ def find_available_port(start_port: int, max_attempts: int = 10) -> int:
 
 
 async def _serve() -> None:
-    preferred_port = int(os.getenv("FLASH_AI_PORT", "27888"))
+    preferred_port = int(os.getenv("RETENTION_PORT", "27888"))
 
     # Find an available port, starting with the preferred one
     try:
