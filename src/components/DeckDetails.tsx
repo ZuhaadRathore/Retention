@@ -6,6 +6,8 @@ import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { DeckEditor } from "./DeckEditor";
 import { StudyPanel } from "./StudyPanel";
 import { DeckHomeScreen } from "./DeckHomeScreen";
+import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import { useToast, ToastContainer } from "./Toast";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
 import type { CardPayload, CardSchedule, Deck } from "../types/deck";
@@ -216,6 +218,8 @@ export function DeckDetails() {
   const [localMessage, setLocalMessage] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showHomeScreen, setShowHomeScreen] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const { toasts, showToast, closeToast } = useToast();
 
   useEffect(() => {
     setMode((current) => (current === "create" ? current : "view"));
@@ -277,7 +281,9 @@ export function DeckDetails() {
     const success = await addDeck(payload);
     if (success) {
       setMode("view");
-      setLocalMessage(`Saved deck "${payload.title}".`);
+      showToast(`Created deck "${payload.title}"`, "success");
+    } else {
+      showToast("Failed to create deck. Please try again.", "error");
     }
     return success;
   };
@@ -291,7 +297,9 @@ export function DeckDetails() {
     const success = await updateDeck(deck.id, payload);
     if (success) {
       setMode("view");
-      setLocalMessage(`Updated deck "${payload.title}".`);
+      showToast(`Updated deck "${payload.title}"`, "success");
+    } else {
+      showToast("Failed to update deck. Please try again.", "error");
     }
     return success;
   };
@@ -321,12 +329,13 @@ export function DeckDetails() {
       const success = await addDeck(payload);
       if (success) {
         setMode("view");
-        setLocalMessage(`Imported deck "${payload.title}".`);
+        showToast(`Imported deck "${payload.title}"`, "success");
+      } else {
+        showToast("Failed to import deck. Please try again.", "error");
       }
     } catch (importError) {
-      setLocalError(
-        importError instanceof Error ? importError.message : String(importError)
-      );
+      const errorMsg = importError instanceof Error ? importError.message : String(importError);
+      showToast(errorMsg, "error");
     }
   };
 
@@ -347,28 +356,34 @@ export function DeckDetails() {
       }
       const payload = createDeckExportPayload(deck);
       await writeTextFile(target, payload);
-      setLocalMessage(`Exported deck "${deck.title}" to ${target}.`);
+      showToast(`Exported deck "${deck.title}"`, "success");
     } catch (exportError) {
-      setLocalError(
-        exportError instanceof Error ? exportError.message : String(exportError)
-      );
+      const errorMsg = exportError instanceof Error ? exportError.message : String(exportError);
+      showToast(errorMsg, "error");
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deck || busy) {
       return;
     }
-    const confirmed = window.confirm('Delete deck "' + deck.title + '"? This cannot be undone.');
-    if (!confirmed) {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deck) {
       return;
     }
+    setShowDeleteModal(false);
     setLocalMessage(null);
     setLocalError(null);
+    const deckTitle = deck.title;
     const success = await removeDeck(deck.id);
     if (success) {
       setMode("view");
-      setLocalMessage(`Deleted deck "${deck.title}".`);
+      showToast(`Deleted deck "${deckTitle}"`, "success");
+    } else {
+      showToast("Failed to delete deck. Please try again.", "error");
     }
   };
 
@@ -386,33 +401,39 @@ export function DeckDetails() {
 
   if (mode === "create") {
     return (
-      <div className="p-8 flashcard paper-texture min-h-[20rem]">
-        <DeckEditor
-          mode="create"
-          initialDeck={null}
-          submitting={busy}
-          onSubmit={handleCreateSubmit}
-          onCancel={() => setMode("view")}
-        />
-        {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
-        {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
-      </div>
+      <>
+        <ToastContainer toasts={toasts} onClose={closeToast} />
+        <div className="p-8 flashcard paper-texture min-h-[20rem]">
+          <DeckEditor
+            mode="create"
+            initialDeck={null}
+            submitting={busy}
+            onSubmit={handleCreateSubmit}
+            onCancel={() => setMode("view")}
+          />
+          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
+          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
+        </div>
+      </>
     );
   }
 
   if (mode === "edit" && deck) {
     return (
-      <div className="p-8 flashcard paper-texture min-h-[20rem]">
-        <DeckEditor
-          mode="edit"
-          initialDeck={deck}
-          submitting={busy}
-          onSubmit={handleEditSubmit}
-          onCancel={() => setMode("view")}
-        />
-        {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
-        {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
-      </div>
+      <>
+        <ToastContainer toasts={toasts} onClose={closeToast} />
+        <div className="p-8 flashcard paper-texture min-h-[20rem]">
+          <DeckEditor
+            mode="edit"
+            initialDeck={deck}
+            submitting={busy}
+            onSubmit={handleEditSubmit}
+            onCancel={() => setMode("view")}
+          />
+          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
+          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
+        </div>
+      </>
     );
   }
 
@@ -488,20 +509,33 @@ export function DeckDetails() {
   // If there's an active card or we're in study mode, show the study panel
   if (activeCard || !showHomeScreen) {
     return (
-      <div className="flex flex-col gap-4">
-        <StudyPanel
-          card={activeCard}
-          deckTitle={deck.title}
-          mode={mode}
-          onReturnHome={handleReturnHome}
-        />
-      </div>
+      <>
+        <ToastContainer toasts={toasts} onClose={closeToast} />
+        <div className="flex flex-col gap-4">
+          <StudyPanel
+            card={activeCard}
+            deckTitle={deck.title}
+            mode={mode}
+            onReturnHome={handleReturnHome}
+          />
+        </div>
+      </>
     );
   }
 
   // Otherwise show the deck home screen
   return (
     <>
+      <ToastContainer toasts={toasts} onClose={closeToast} />
+      {showDeleteModal && deck && (
+        <DeleteConfirmModal
+          itemName={deck.title}
+          itemType="deck"
+          cardCount={deck.cardCount}
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
       <DeckHomeScreen
         deck={deck}
         onStartStudying={handleStartStudying}
