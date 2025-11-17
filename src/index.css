@@ -7,6 +7,46 @@ body {
     padding: 0;
 }
 
+/* Global focus indicator styles for accessibility */
+*:focus-visible {
+    outline: 3px solid #8B4513;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Specific focus styles for buttons */
+button:focus-visible {
+    outline: 3px solid #8B4513;
+    outline-offset: 2px;
+}
+
+/* Focus styles for inputs and textareas */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 3px solid #8B4513;
+    outline-offset: 2px;
+}
+
+/* Focus styles for links */
+a:focus-visible {
+    outline: 3px solid #8B4513;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Consistent disabled state styling */
+button:disabled,
+button[disabled],
+input:disabled,
+input[disabled],
+textarea:disabled,
+textarea[disabled],
+select:disabled,
+select[disabled] {
+    cursor: not-allowed;
+}
+
 .flip-card {
     perspective: 1000px;
 }
@@ -117,12 +157,23 @@ body {
     }
 
     .hand-drawn-input:focus {
-        outline: none;
         border-color: #8B4513;
         box-shadow:
             inset 0 1px 3px rgba(62, 39, 35, 0.1),
             3px 3px 0px 0px rgba(139, 69, 19, 0.25),
             0 0 0 3px rgba(139, 69, 19, 0.1);
+    }
+
+    .hand-drawn-input:focus-visible {
+        outline: 3px solid #8B4513;
+        outline-offset: 2px;
+    }
+
+    .hand-drawn-input:disabled,
+    .hand-drawn-input[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #f5f5f5;
     }
 
     .hand-drawn-btn {
@@ -143,6 +194,18 @@ body {
     .hand-drawn-btn:active {
         transform: translate(3px, 3px);
         box-shadow: none;
+    }
+
+    .hand-drawn-btn:focus-visible {
+        outline: 3px solid #8B4513;
+        outline-offset: 2px;
+    }
+
+    .hand-drawn-btn:disabled,
+    .hand-drawn-btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     .hand-drawn-feedback {
@@ -206,10 +269,141 @@ body {
         animation: slide-in-right 0.3s ease-out;
     }
 
+    /* Fade animations for state transitions */
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes fade-out {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
+    /* Apply animations only if user hasn't requested reduced motion */
+    @media (prefers-reduced-motion: no-preference) {
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-in;
+        }
+
+        .animate-fade-out {
+            animation: fade-out 0.3s ease-out;
+        }
+
+        /* Smooth transitions for interactive elements */
+        button,
+        a,
+        input,
+        textarea,
+        select {
+            transition: all 0.2s ease;
+        }
+
+        /* Card flip animation (already exists but ensure it respects motion preference) */
+        .flip-card-inner {
+            transition: transform 0.6s;
+        }
+    }
+
+    /* Disable animations for users who prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+
+        .flip-card-inner {
+            transition: none !important;
+        }
+
+        .animate-pulse {
+            animation: none !important;
+        }
+    }
+
     /* Hand-drawn card style for toasts and overlays */
     .hand-drawn-card {
         box-shadow:
             3px 3px 0px 0px rgba(139, 69, 19, 0.2),
             6px 6px 0px 0px rgba(139, 69, 19, 0.1);
+    }
+}
+
+/* Print Stylesheet for offline study */
+@media print {
+    /* Hide navigation, buttons, and UI chrome */
+    nav,
+    button,
+    .toast-container,
+    header,
+    footer,
+    aside {
+        display: none !important;
+    }
+
+    /* Optimize page layout */
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    /* Card styling for print */
+    .flashcard {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 2rem;
+        border: 2px solid #333;
+        padding: 1.5rem;
+        background: white !important;
+    }
+
+    /* Remove shadows and effects for clean printing */
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    /* Ensure text is black for readability */
+    body,
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    div,
+    span {
+        color: #000 !important;
+    }
+
+    /* Show answers on print */
+    .flip-card-back {
+        display: block !important;
+        position: relative !important;
+        transform: none !important;
+    }
+
+    .flip-card-front {
+        display: none !important;
+    }
+
+    /* Optimize for A4/Letter paper */
+    @page {
+        margin: 1.5cm;
+        size: portrait;
     }
 }

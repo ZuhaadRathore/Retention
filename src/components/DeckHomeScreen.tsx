@@ -1,5 +1,6 @@
 import type { Deck } from "../types/deck";
 import { formatRelativeTime } from "../utils/time";
+import { renderMarkdown } from "../utils/markdown";
 
 interface DeckHomeScreenProps {
   deck: Deck;
@@ -51,7 +52,10 @@ export function DeckHomeScreen({ deck, onStartStudying, onEdit, onExport, onDele
       <div className="mb-8">
         <h1 className="text-4xl font-bold m-0 mb-4 text-text-color font-display">{deck.title}</h1>
         {deck.description && (
-          <p className="text-lg text-text-muted mb-4 leading-relaxed">{deck.description}</p>
+          <div
+            className="text-lg text-text-muted mb-4 leading-relaxed prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={renderMarkdown(deck.description)}
+          />
         )}
         <p className="text-sm text-text-muted">
           Last updated: <strong>{formatDate(deck.updatedAt)}</strong>

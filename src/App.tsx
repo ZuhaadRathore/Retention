@@ -4,7 +4,9 @@ import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 
 import { DeckDetails } from "./components/DeckDetails";
 import { DeckList } from "./components/DeckList";
+import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { useDeckStore } from "./store/deckStore";
+import { useStudyStore } from "./store/studyStore";
 import { useBackendStore } from "./store/backendStore";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { useToast, ToastContainer } from "./components/Toast";
@@ -163,9 +165,11 @@ function parseDeckImport(content: string): { title: string; description?: string
 function App() {
   const initializeDecks = useDeckStore((state) => state.initialize);
   const checkHealth = useBackendStore((state) => state.checkHealth);
+  const resetSession = useStudyStore((state) => state.resetSession);
   const { isDark, toggle } = useDarkMode();
   const { toasts, showToast, closeToast } = useToast();
   const [busy, setBusy] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const { decks, selectedDeckId, addDeck } = useDeckStore((state) => ({
     decks: state.decks,
@@ -248,9 +252,36 @@ function App() {
     }
   };
 
+  const handleResetAppData = () => {
+    // Clear study session
+    resetSession();
+
+    // Clear all localStorage
+    localStorage.clear();
+
+    // Show success message
+    showToast("All app data has been cleared. Refresh to reload.", "success");
+
+    // Close modal
+    setShowResetModal(false);
+
+    // Reload the page after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  };
+
   return (
     <>
       <ToastContainer toasts={toasts} onClose={closeToast} />
+      {showResetModal && (
+        <DeleteConfirmModal
+          itemName="all app data"
+          itemType="data"
+          onConfirm={handleResetAppData}
+          onCancel={() => setShowResetModal(false)}
+        />
+      )}
       <div className="relative flex min-h-screen bg-background-light paper-texture">
         <aside className="w-72 bg-card-background/60 p-6 flex flex-col justify-between border-r-4 border-border-color shadow-lg">
           <div>
@@ -286,8 +317,9 @@ function App() {
             </div>
           </div>
 
-          {/* Dark Mode Toggle */}
-          <div className="pt-4 border-t-2 border-border-color/30">
+          {/* Settings Section */}
+          <div className="pt-4 border-t-2 border-border-color/30 space-y-3">
+            {/* Dark Mode Toggle */}
             <button
               type="button"
               className="w-full px-4 py-3 rounded-xl border-2 border-border-color bg-card-background text-text-color font-semibold hand-drawn-btn hover:bg-paper-line flex items-center justify-between text-sm transition-colors"
@@ -300,6 +332,24 @@ function App() {
               </span>
               <span className="text-xs text-text-muted">Toggle</span>
             </button>
+
+            {/* Reset App Data */}
+            <button
+              type="button"
+              className="w-full px-4 py-3 rounded-xl border-2 border-incorrect-red/50 bg-card-background text-incorrect-red font-semibold hand-drawn-btn hover:bg-incorrect-red/10 flex items-center justify-center gap-2 text-sm transition-colors"
+              onClick={() => setShowResetModal(true)}
+              title="Clear all app data and reset to defaults"
+            >
+              <span className="text-xl">⚠️</span>
+              <span>Reset App Data</span>
+            </button>
+
+            {/* Version Number */}
+            <div className="text-center pt-2">
+              <p className="text-xs text-text-muted m-0">
+                Version <span className="font-mono font-semibold">0.1.0</span>
+              </p>
+            </div>
           </div>
         </aside>
         <main className="flex-1 flex flex-col p-10 bg-gradient-to-br from-background-light via-background-light to-paper-line">
