@@ -168,6 +168,63 @@ function BackendStatusBanner() {
   );
 }
 
+interface HelpOverlayProps {
+  onClose: () => void;
+}
+
+function HelpOverlay({ onClose }: HelpOverlayProps) {
+  const shortcuts = [
+    { key: "Enter", description: "Submit your answer (when answer field is not focused)" },
+    { key: "N", description: "Navigate to next card" },
+    { key: "B", description: "Move current card to back of pile" },
+    { key: "?", description: "Toggle this help overlay" }
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card-background border-4 border-primary rounded-2xl p-8 max-w-2xl w-full shadow-2xl hand-drawn"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold m-0 text-text-color font-display">Keyboard Shortcuts</h2>
+          <button
+            type="button"
+            className="w-10 h-10 rounded-full border-2 border-border-color bg-card-background text-text-color font-bold hand-drawn-btn hover:bg-paper-line flex items-center justify-center text-xl"
+            onClick={onClose}
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {shortcuts.map((shortcut) => (
+            <div
+              key={shortcut.key}
+              className="flex items-center gap-4 p-4 rounded-xl bg-paper-line/30 border-2 border-border-color/30"
+            >
+              <kbd className="px-4 py-2 rounded-lg bg-primary text-white font-bold text-lg min-w-[4rem] text-center shadow-md">
+                {shortcut.key}
+              </kbd>
+              <p className="m-0 text-text-color text-base flex-1">{shortcut.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 pt-6 border-t-2 border-border-color/30">
+          <p className="text-sm text-text-muted m-0 text-center">
+            Press <kbd className="px-2 py-1 rounded bg-primary/20 text-primary font-semibold">?</kbd> anytime to toggle this help
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SessionSummaryProps {
   deckTitle: string;
   session: SessionQueueState;
@@ -245,6 +302,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const [sessionWasRestored, setSessionWasRestored] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [showHelpOverlay, setShowHelpOverlay] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const arrowContainerRef = useRef<HTMLDivElement>(null);
@@ -399,6 +457,13 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
           void submitCurrentAnswer();
         }
       }
+    }
+
+    // Handle "?" for help overlay (works everywhere except in editable fields)
+    if (event.key === "?" && !isEditable) {
+      event.preventDefault();
+      setShowHelpOverlay(prev => !prev);
+      return;
     }
 
     // Check if user is in an editable field for navigation shortcuts
@@ -623,10 +688,19 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       )}
       <BackendStatusBanner />
 
-      <div className="flex items-center mb-4">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-text-muted text-sm m-0">
           Studying from <strong className="text-primary">{deckTitle}</strong>
         </p>
+        <button
+          type="button"
+          className="px-3 py-1.5 rounded-lg border-2 border-border-color/50 bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color hover:border-primary/50 text-xs font-medium transition-colors hand-drawn-btn flex items-center gap-1.5"
+          onClick={() => setShowHelpOverlay(true)}
+          title="View keyboard shortcuts"
+        >
+          <span className="text-sm">⌨</span>
+          <span>Press ? for shortcuts</span>
+        </button>
       </div>
 
       {/* Progress Indicator */}
@@ -836,6 +910,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
         </button>
       </div>
 
+      {/* Help Overlay */}
+      {showHelpOverlay && <HelpOverlay onClose={() => setShowHelpOverlay(false)} />}
     </div>
   );
 }
