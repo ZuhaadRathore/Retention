@@ -92,31 +92,41 @@ function SessionRestorationBanner({
 }: SessionRestorationBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
+  // Auto-dismiss after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDismissed(true);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   if (dismissed) {
     return null;
   }
 
   return (
-    <div className="p-4 rounded-xl mb-4 bg-warning-amber/20 border-2 border-warning-amber flex items-center justify-between gap-4 flex-wrap hand-drawn">
-      <div className="flex-1 min-w-[200px]">
-        <p className="m-0 mb-1 text-base font-semibold text-text-color">Session Restored</p>
-        <p className="m-0 text-sm text-text-color">
-          Resumed studying <strong>{deckTitle}</strong> from {formatSessionAge(sessionStartedAt)}
-          {" "}({progress.completed} of {progress.total} cards reviewed)
-        </p>
+    <div className="p-2 px-4 rounded-lg mb-3 bg-primary/10 border border-primary/30 flex items-center justify-between gap-3 text-sm">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className="text-primary font-semibold flex-shrink-0">Session Restored:</span>
+        <span className="text-text-color truncate">
+          Resumed <strong>{deckTitle}</strong> from {formatSessionAge(sessionStartedAt)} ({progress.completed}/{progress.total} cards)
+        </span>
       </div>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-shrink-0">
         <button
           type="button"
-          className="px-4 py-2 rounded-full border-2 border-border-color bg-card-background text-text-color font-semibold hand-drawn-btn hover:bg-paper-line text-sm"
+          className="px-3 py-1 rounded-md text-xs border border-border-color/50 bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color transition-colors"
           onClick={() => setDismissed(true)}
+          title="Dismiss notification"
         >
           Dismiss
         </button>
         <button
           type="button"
-          className="px-4 py-2 rounded-full bg-incorrect-red text-white font-bold hand-drawn-btn hover:bg-incorrect-red/90 text-sm"
+          className="px-3 py-1 rounded-md text-xs bg-incorrect-red/90 text-white hover:bg-incorrect-red transition-colors"
           onClick={onClearSession}
+          title="Start a fresh session"
         >
           Clear Session
         </button>
