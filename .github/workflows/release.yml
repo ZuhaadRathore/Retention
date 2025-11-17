@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., v0.1.0)"
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.extract_version.outputs.version }}
+    steps:
+      - name: Extract version
+        id: extract_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.extract_version.outputs.version }}
+          release_name: Flash-AI ${{ steps.extract_version.outputs.version }}
+          draft: true
+          prerelease: false
+          body: |
+            ## What's Changed
+            <!-- Add release notes here -->
+
+            ## Installation
+            Download the appropriate installer for your platform:
+            - **Windows**: `Flash-AI-${{ steps.extract_version.outputs.version }}-x64.msi`
+            - **macOS**: `Flash-AI-${{ steps.extract_version.outputs.version }}.dmg`
+            - **Linux**: `Flash-AI-${{ steps.extract_version.outputs.version }}.AppImage`
+
+  build-release:
+    name: Build ${{ matrix.platform }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            rust_target: x86_64-pc-windows-msvc
+          - platform: macos
+            os: macos-latest
+            rust_target: x86_64-apple-darwin
+          - platform: linux
+            os: ubuntu-latest
+            rust_target: x86_64-unknown-linux-gnu
+
+    env:
+      CI: "true"
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "8"
+          run_install: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: python_sidecar/pyproject.toml
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./python_sidecar[dev]"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Python sidecar
+        run: pnpm sidecar:build:${{ matrix.platform }}
+
+      - name: Build Tauri app
+        run: pnpm build
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Prepare Windows artifacts
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $msiPath = Get-ChildItem -Path "src-tauri/target/release/bundle/msi/*.msi" -Recurse | Select-Object -First 1
+          $version = "${{ needs.create-release.outputs.version }}".TrimStart('v')
+          $destName = "Flash-AI-${{ needs.create-release.outputs.version }}-x64.msi"
+          Copy-Item -Path $msiPath.FullName -Destination $destName
+          echo "ASSET_PATH=$destName" >> $env:GITHUB_ENV
+          echo "ASSET_NAME=$destName" >> $env:GITHUB_ENV
+
+      - name: Prepare macOS artifacts
+        if: matrix.platform == 'macos'
+        run: |
+          DMG_PATH=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" | head -n 1)
+          DEST_NAME="Flash-AI-${{ needs.create-release.outputs.version }}.dmg"
+          cp "$DMG_PATH" "$DEST_NAME"
+          echo "ASSET_PATH=$DEST_NAME" >> $GITHUB_ENV
+          echo "ASSET_NAME=$DEST_NAME" >> $GITHUB_ENV
+
+      - name: Prepare Linux artifacts
+        if: matrix.platform == 'linux'
+        run: |
+          APPIMAGE_PATH=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -n 1)
+          DEST_NAME="Flash-AI-${{ needs.create-release.outputs.version }}.AppImage"
+          cp "$APPIMAGE_PATH" "$DEST_NAME"
+          chmod +x "$DEST_NAME"
+          echo "ASSET_PATH=$DEST_NAME" >> $GITHUB_ENV
+          echo "ASSET_NAME=$DEST_NAME" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.ASSET_PATH }}
+          asset_name: ${{ env.ASSET_NAME }}
+          asset_content_type: application/octet-stream
+
+      - name: Generate checksums
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            certutil -hashfile "${{ env.ASSET_PATH }}" SHA256 > "${{ env.ASSET_NAME }}.sha256"
+          else
+            sha256sum "${{ env.ASSET_PATH }}" > "${{ env.ASSET_NAME }}.sha256"
+          fi
+        shell: bash
+
+      - name: Upload checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.ASSET_NAME }}.sha256
+          asset_name: ${{ env.ASSET_NAME }}.sha256
+          asset_content_type: text/plain

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(test:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run sidecar:build:*)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(cmd.exe /c \".venv\\Scripts\\python.exe -c \"\"import sentence_transformers; import torch; import fastapi; print(''All dependencies installed!'')\"\"\")",
+      "Bash(cmd.exe /c \"py -m pip install --user huggingface-hub --quiet && py download_model.py\")",
+      "Bash(\"C:\\Users\\Tavuc\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m pip list)",
+      "Bash(\"C:\\Users\\Tavuc\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m pip install pyinstaller)",
+      "Bash(\"C:\\Users\\Tavuc\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m pip install -r requirements.txt)",
+      "Bash(mkdir:*)",
+      "Bash(if exist dist rmdir /s /q dist)",
+      "Bash(dir)",
+      "Bash(dir:*)",
+      "Bash(pnpm add:*)",
+      "Bash(cmd.exe /c \"if exist dist rmdir /s /q dist\")",
+      "Bash(pnpm dev)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

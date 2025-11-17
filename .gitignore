@@ -1,0 +1,264 @@
+# Flash-AI .gitignore
+# Comprehensive ignore patterns for Tauri + React + Python project
+
+# ============================================
+# Node.js / JavaScript / TypeScript
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Vite
+.vite/
+vite.config.*.timestamp-*
+
+# ============================================
+# Rust / Cargo
+# ============================================
+# Cargo build artifacts
+src-tauri/target/
+**/target/
+
+# Cargo.lock (keep if this is a binary, ignore if library)
+# src-tauri/Cargo.lock is kept for reproducible builds
+
+# ============================================
+# Tauri
+# ============================================
+# Tauri build output
+src-tauri/target/
+src-tauri/WixTools/
+
+# Tauri dev artifacts
+src-tauri/.cargo/
+
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# PyInstaller artifacts
+*.manifest
+*.spec
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Python sidecar build output
+python_sidecar/dist/
+python_sidecar/build/
+python_sidecar/__pycache__/
+
+# PyInstaller spec files (keep custom ones, but ignore generated)
+# Uncomment if you want to track your spec file
+# !flash-ai-sidecar.spec
+
+# ============================================
+# Sidecar Binaries
+# ============================================
+# Built sidecar executables
+src-tauri/binaries/
+src-tauri/bin/
+*.exe
+*.app
+*.AppImage
+
+# Keep the directory structure but ignore binaries
+!src-tauri/binaries/.gitkeep
+!src-tauri/bin/.gitkeep
+
+# ============================================
+# IDE / Editors
+# ============================================
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ IDEA / WebStorm / PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================
+# Operating System
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Testing
+# ============================================
+.pytest_cache/
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.nyc_output/
+*.lcov
+
+# Vitest
+.vitest/
+
+# ============================================
+# Temporary & Cache Files
+# ============================================
+*.log
+*.pid
+*.seed
+*.pid.lock
+.cache/
+tmp/
+temp/
+
+# Test files (if you don't want to track them)
+test.txt
+test2.txt
+nul
+*.tmp
+
+# Sample files
+sample*.txt
+
+# ============================================
+# Environment & Secrets
+# ============================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# API keys and secrets
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# ============================================
+# Data & User Files
+# ============================================
+# User data directory (if contains runtime data)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# ML Models
+# ============================================
+# Pre-downloaded models for bundling (downloaded at build time)
+models/
+
+# ============================================
+# CI/CD & Build Artifacts
+# ============================================
+# GitHub Actions artifacts
+.github/.artifacts/
+
+# Release artifacts
+release/
+releases/
+
+# Code signing
+codesign/
+*.p12
+*.mobileprovision
+
+# ============================================
+# Package Manager Locks
+# ============================================
+# Keep pnpm-lock.yaml for reproducible builds
+# pnpm-lock.yaml
+
+# Keep Cargo.lock for binaries
+# Cargo.lock
+
+# ============================================
+# Documentation Build Artifacts
+# ============================================
+# If you generate docs
+docs/_build/
+docs/.doctrees/
+site/
+
+# ============================================
+# Miscellaneous
+# ============================================
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Profiling
+*.prof
+*.profraw
+
+# Benchmarks
+benchmark-results/

@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.flip-card {
+    perspective: 1000px;
+}
+
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+.flip-card-back {
+    transform: rotateY(180deg);
+}
+
+@layer utilities {
+    /* Flashcard Paper Style - Excalidraw Inspired */
+    .hand-drawn {
+        border-radius: 0.5rem;
+        border: 2.5px solid #8D6E63;
+        box-shadow:
+            4px 4px 0px 0px rgba(139, 69, 19, 0.2),
+            8px 8px 0px 0px rgba(139, 69, 19, 0.1);
+        position: relative;
+        background: linear-gradient(to bottom, #FFFEF9 0%, #FFF9F0 100%);
+    }
+
+    .hand-drawn::before {
+        content: '';
+        position: absolute;
+        background-color: transparent;
+        border: 2px solid rgba(141, 110, 99, 0.3);
+        border-radius: 0.5rem;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        transform: rotate(-0.5deg);
+        z-index: -1;
+    }
+
+    /* Actual flashcard style with paper texture */
+    .flashcard {
+        background:
+            repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 31px,
+                rgba(141, 110, 99, 0.15) 31px,
+                rgba(141, 110, 99, 0.15) 32px
+            ),
+            linear-gradient(to bottom right, #FFFEF9 0%, #FFF9F0 100%);
+        border: 3px solid #8D6E63;
+        border-radius: 0.75rem;
+        box-shadow:
+            0 2px 4px rgba(62, 39, 35, 0.1),
+            0 8px 16px rgba(62, 39, 35, 0.1),
+            4px 4px 0px rgba(139, 69, 19, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        position: relative;
+    }
+
+    .flashcard::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0.75rem;
+        background:
+            radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(139, 69, 19, 0.03) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .hand-drawn-input {
+        border: 2.5px solid #8D6E63;
+        border-radius: 0.5rem;
+        padding: 0.875rem;
+        background:
+            repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 31px,
+                rgba(141, 110, 99, 0.08) 31px,
+                rgba(141, 110, 99, 0.08) 32px
+            ),
+            linear-gradient(to bottom, #FFFEF9 0%, #FFFBF5 100%);
+        box-shadow:
+            inset 0 1px 3px rgba(62, 39, 35, 0.1),
+            2px 2px 0px 0px rgba(139, 69, 19, 0.15);
+        transition: all 0.2s ease;
+    }
+
+    .hand-drawn-input:focus {
+        outline: none;
+        border-color: #8B4513;
+        box-shadow:
+            inset 0 1px 3px rgba(62, 39, 35, 0.1),
+            3px 3px 0px 0px rgba(139, 69, 19, 0.25),
+            0 0 0 3px rgba(139, 69, 19, 0.1);
+    }
+
+    .hand-drawn-btn {
+        border: 2.5px solid #8D6E63;
+        border-radius: 9999px;
+        box-shadow:
+            3px 3px 0px 0px rgba(139, 69, 19, 0.3);
+        transition: all 0.15s ease;
+        position: relative;
+    }
+
+    .hand-drawn-btn:hover {
+        transform: translate(1px, 1px);
+        box-shadow:
+            2px 2px 0px 0px rgba(139, 69, 19, 0.3);
+    }
+
+    .hand-drawn-btn:active {
+        transform: translate(3px, 3px);
+        box-shadow: none;
+    }
+
+    .hand-drawn-feedback {
+        border-style: solid;
+        border-width: 2.5px;
+        border-radius: 0.75rem;
+        position: relative;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+    }
+
+    .hand-drawn-feedback::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        border-style: solid;
+        border-width: 2px;
+        border-radius: 0.75rem;
+        transform: rotate(-0.5deg);
+        border-color: inherit;
+        opacity: 0.3;
+        z-index: -1;
+    }
+
+    /* Paper texture overlay */
+    .paper-texture {
+        background-image:
+            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05" /></svg>');
+    }
+
+    /* 3D Transform utilities for flip card */
+    .perspective-1000 {
+        perspective: 1000px;
+    }
+    .transform-style-preserve-3d {
+        transform-style: preserve-3d;
+    }
+    .rotate-y-180 {
+        transform: rotateY(180deg);
+    }
+    .backface-hidden {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+}
