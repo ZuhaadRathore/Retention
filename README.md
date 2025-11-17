@@ -1,5 +1,7 @@
 # Retention Desktop
 
+**Learn it. Keep it. Make it stick.**
+
 Retention is a Tauri-powered desktop shell around a FastAPI-based Python sidecar. The React UI talks to the bundled sidecar over HTTP (27888 by default), so the entire experience can ship as a single installer (`retention.exe` on Windows) once the sidecar is built with PyInstaller.
 
 ## Architecture

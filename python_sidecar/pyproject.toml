@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "retention-sidecar"
 version = "0.1.0"
-description = "Local FastAPI sidecar powering Retention scoring"
+description = "Local FastAPI sidecar powering Retention - AI-powered flashcard learning"
 readme = "README.md"
 authors = [{ name = "Retention Team" }]
 requires-python = ">=3.10"
