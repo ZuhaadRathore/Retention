@@ -1,10 +1,24 @@
+import { useState, useMemo } from "react";
 import { useDeckStore } from "../store/deckStore";
+import { formatRelativeTime } from "../utils/time";
 
 function requestDeckCreation() {
   if (typeof window === "undefined") {
     return;
   }
   window.dispatchEvent(new Event("retention:create-deck"));
+}
+
+function calculateDeckProgress(deck: { cards: Array<{ schedule?: { dueAt: string } | null }> }) {
+  const now = new Date();
+  const dueCards = deck.cards.filter((card) => {
+    if (!card.schedule?.dueAt) return false;
+    return new Date(card.schedule.dueAt) <= now;
+  }).length;
+
+  const studiedCards = deck.cards.filter((card) => card.schedule !== null && card.schedule !== undefined).length;
+
+  return { dueCards, studiedCards };
 }
 
 export function DeckList() {
@@ -16,6 +30,19 @@ export function DeckList() {
     error: state.error
   }));
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredDecks = useMemo(() => {
+    if (!searchQuery.trim()) return decks;
+
+    const query = searchQuery.toLowerCase();
+    return decks.filter((deck) => {
+      const titleMatch = deck.title.toLowerCase().includes(query);
+      const descMatch = deck.description?.toLowerCase().includes(query);
+      return titleMatch || descMatch;
+    });
+  }, [decks, searchQuery]);
+
   const busy = status === "loading";
 
   const handleCreate = () => {
@@ -26,8 +53,22 @@ export function DeckList() {
     requestDeckCreation();
   };
 
-  if (status === "loading" && decks.length === 0) {
-    return <p className="text-sm text-text-muted italic">Loading decks...</p>;
+  if (status === "loading") {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold m-0 text-text-color font-display">Decks</h2>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-primary">
+          <div className="flex gap-1">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+          </div>
+          <span>Loading decks...</span>
+        </div>
+      </div>
+    );
   }
 
   if (status === "error" && decks.length === 0) {
@@ -66,11 +107,31 @@ export function DeckList() {
           New
         </button>
       </div>
+
+      {/* Search bar */}
+      {decks.length > 0 && (
+        <div className="mb-3">
+          <input
+            type="text"
+            placeholder="Search decks..."
+            className="w-full hand-drawn-input text-text-color focus:outline-none text-sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      )}
+
       {busy && <p className="text-xs text-primary font-medium mb-2">Syncing deck changes...</p>}
-      {status === "error" && error && <p className="text-xs text-incorrect-red font-medium mb-2">Error: {error}</p>}
+      {status === "error" && error && <p className="text-xs text-incorrect-red font-medium mb-2">Could not sync changes. Please try again.</p>}
+
+      {filteredDecks.length === 0 && searchQuery.trim() && (
+        <p className="text-sm text-text-muted italic">No decks match "{searchQuery}"</p>
+      )}
+
       <div className="flex flex-col gap-3">
-        {decks.map((deck) => {
+        {filteredDecks.map((deck) => {
           const isActive = deck.id === selectedDeckId;
+          const progress = calculateDeckProgress(deck);
 
           return (
             <button
@@ -85,7 +146,14 @@ export function DeckList() {
             >
               <p className="text-base font-bold m-0 text-text-color">{deck.title}</p>
               <p className="text-xs text-text-muted mt-1.5">
-                {deck.cardCount} cards · {new Date(deck.updatedAt).toLocaleDateString()}
+                {deck.cardCount} cards
+                {progress.studiedCards > 0 && ` · ${progress.studiedCards} studied`}
+                {progress.dueCards > 0 && (
+                  <span className="text-primary font-semibold"> · {progress.dueCards} due</span>
+                )}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {formatRelativeTime(deck.updatedAt)}
               </p>
             </button>
           );

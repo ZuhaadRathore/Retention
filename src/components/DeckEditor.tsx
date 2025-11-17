@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import type { CardPayload, GradingMode } from "../types/deck";
+import type { CardPayload } from "../types/deck";
 
 interface DeckDraftCard {
   tempId: string;
@@ -8,7 +8,6 @@ interface DeckDraftCard {
   prompt: string;
   answer: string;
   keypointsText: string;
-  gradingMode: GradingMode;
 }
 
 interface DeckDraft {
@@ -29,7 +28,6 @@ interface DeckEditorProps {
       prompt: string;
       answer?: string;
       keypoints?: string[];
-      gradingMode?: GradingMode;
     }>;
   } | null;
   submitting?: boolean;
@@ -40,8 +38,6 @@ interface DeckEditorProps {
   }) => Promise<boolean> | boolean;
   onCancel: () => void;
 }
-
-const DEFAULT_GRADING_MODE: GradingMode = "lenient";
 
 function makeTempId(seed?: string): string {
   if (seed) {
@@ -64,8 +60,7 @@ function toDraft(initialDeck?: DeckEditorProps["initialDeck"]): DeckDraft {
           tempId: makeTempId(),
           prompt: "",
           answer: "",
-          keypointsText: "",
-          gradingMode: DEFAULT_GRADING_MODE
+          keypointsText: ""
         }
       ]
     };
@@ -77,16 +72,14 @@ function toDraft(initialDeck?: DeckEditorProps["initialDeck"]): DeckDraft {
         id: card.id,
         prompt: card.prompt,
         answer: card.answer ?? "",
-        keypointsText: (card.keypoints ?? []).join("\n"),
-        gradingMode: card.gradingMode ?? DEFAULT_GRADING_MODE
+        keypointsText: (card.keypoints ?? []).join("\n")
       }))
     : [
         {
           tempId: makeTempId(),
           prompt: "",
           answer: "",
-          keypointsText: "",
-          gradingMode: DEFAULT_GRADING_MODE
+          keypointsText: ""
         }
       ];
 
@@ -112,21 +105,56 @@ function sanitizeCards(cards: DeckDraftCard[]): CardPayload[] {
         id: card.id,
         prompt,
         answer,
-        keypoints,
-        gradingMode: card.gradingMode ?? DEFAULT_GRADING_MODE
+        keypoints
       };
     })
     .filter((card) => card.prompt && card.answer);
 }
 
+function validateCard(card: DeckDraftCard): { prompt?: string; answer?: string; keypoints?: string } {
+  const errors: { prompt?: string; answer?: string; keypoints?: string } = {};
+
+  if (!card.prompt.trim()) {
+    errors.prompt = "Prompt is required";
+  } else if (card.prompt.trim().length < 3) {
+    errors.prompt = "Prompt must be at least 3 characters";
+  }
+
+  if (!card.answer.trim()) {
+    errors.answer = "Answer is required";
+  } else if (card.answer.trim().length < 3) {
+    errors.answer = "Answer must be at least 3 characters";
+  }
+
+  const keypointLines = card.keypointsText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (keypointLines.length < 2) {
+    errors.keypoints = "At least 2 keypoints required";
+  } else if (keypointLines.length > 6) {
+    errors.keypoints = "Maximum 6 keypoints allowed";
+  }
+
+  return errors;
+}
+
 export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }: DeckEditorProps) {
   const [draft, setDraft] = useState<DeckDraft>(() => toDraft(initialDeck));
   const [error, setError] = useState<string | null>(null);
+  const [cardValidations, setCardValidations] = useState<Record<string, ReturnType<typeof validateCard>>>({});
 
   useEffect(() => {
     setDraft(toDraft(initialDeck));
     setError(null);
+    setCardValidations({});
   }, [initialDeck, mode]);
+
+  // Real-time validation
+  useEffect(() => {
+    const validations: Record<string, ReturnType<typeof validateCard>> = {};
+    draft.cards.forEach((card) => {
+      validations[card.tempId] = validateCard(card);
+    });
+    setCardValidations(validations);
+  }, [draft.cards]);
 
   const heading = useMemo(() => (mode === "create" ? "Create new deck" : "Edit deck"), [mode]);
 
@@ -197,8 +225,7 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
           tempId: makeTempId(),
           prompt: "",
           answer: "",
-          keypointsText: "",
-          gradingMode: DEFAULT_GRADING_MODE
+          keypointsText: ""
         }
       ]
     }));
@@ -221,7 +248,7 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
         </label>
         <input
           id="deck-title"
-          className="hand-drawn-input text-text-color focus:outline-none text-base"
+          className={`hand-drawn-input text-text-color focus:outline-none text-base ${!draft.title.trim() ? 'border-2 border-warning-amber' : ''}`}
           value={draft.title}
           disabled={Boolean(submitting)}
           onChange={(event) =>
@@ -232,6 +259,7 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
           }
           placeholder="e.g. Neuroanatomy Foundations"
         />
+        {!draft.title.trim() && <p className="text-xs text-warning-amber m-0">Deck title is required</p>}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -267,10 +295,16 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
         </div>
         <div className="flex flex-col gap-4">
           {draft.cards.map((card, index) => {
+            const validation = cardValidations[card.tempId] || {};
+            const hasErrors = Object.keys(validation).length > 0;
+
             return (
-              <div key={card.tempId} className="p-6 rounded-xl flashcard paper-texture">
+              <div key={card.tempId} className={`p-6 rounded-xl flashcard paper-texture ${hasErrors ? 'border-2 border-warning-amber/50' : ''}`}>
                 <div className="flex justify-between items-center mb-4">
-                  <p className="text-lg font-bold m-0 text-text-color font-display">Card {index + 1}</p>
+                  <p className="text-lg font-bold m-0 text-text-color font-display">
+                    Card {index + 1}
+                    {hasErrors && <span className="ml-2 text-warning-amber text-sm">⚠</span>}
+                  </p>
                   {draft.cards.length > 1 && (
                     <button
                       type="button"
@@ -284,11 +318,11 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                 </div>
                 <div className="flex flex-col gap-2 mb-4">
                   <label className="text-base font-semibold text-text-color" htmlFor={"prompt-" + card.tempId}>
-                    Prompt
+                    Prompt {card.prompt.trim().length > 0 && <span className="text-xs text-text-muted font-normal">({card.prompt.trim().length} chars)</span>}
                   </label>
                   <textarea
                     id={"prompt-" + card.tempId}
-                    className="hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y"
+                    className={`hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y ${validation.prompt ? 'border-2 border-warning-amber' : ''}`}
                     value={card.prompt}
                     disabled={Boolean(submitting)}
                     onChange={(event) =>
@@ -299,14 +333,15 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                     }
                     placeholder="What is the main idea of photosynthesis?"
                   />
+                  {validation.prompt && <p className="text-xs text-warning-amber m-0">{validation.prompt}</p>}
                 </div>
                 <div className="flex flex-col gap-2 mb-4">
                   <label className="text-base font-semibold text-text-color" htmlFor={"answer-" + card.tempId}>
-                    Answer
+                    Answer {card.answer.trim().length > 0 && <span className="text-xs text-text-muted font-normal">({card.answer.trim().length} chars)</span>}
                   </label>
                   <textarea
                     id={"answer-" + card.tempId}
-                    className="hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y"
+                    className={`hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y ${validation.answer ? 'border-2 border-warning-amber' : ''}`}
                     value={card.answer}
                     disabled={Boolean(submitting)}
                     onChange={(event) =>
@@ -317,14 +352,19 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                     }
                     placeholder="A light-driven process that converts carbon dioxide and water into glucose and oxygen."
                   />
+                  {validation.answer && <p className="text-xs text-warning-amber m-0">{validation.answer}</p>}
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-base font-semibold text-text-color" htmlFor={"keypoints-" + card.tempId}>
-                    Keypoints (one per line)
+                    Keypoints (one per line) {card.keypointsText.split(/\r?\n/).filter(l => l.trim()).length > 0 && (
+                      <span className="text-xs text-text-muted font-normal">
+                        ({card.keypointsText.split(/\r?\n/).filter(l => l.trim()).length} keypoints)
+                      </span>
+                    )}
                   </label>
                   <textarea
                     id={"keypoints-" + card.tempId}
-                    className="hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y"
+                    className={`hand-drawn-input text-text-color focus:outline-none text-base min-h-[4.5rem] resize-y ${validation.keypoints ? 'border-2 border-warning-amber' : ''}`}
                     value={card.keypointsText}
                     disabled={Boolean(submitting)}
                     onChange={(event) =>
@@ -335,7 +375,11 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                     }
                     placeholder={"chloroplasts\nlight-dependent reactions\nATP generation"}
                   />
-                  <p className="text-sm text-text-muted mt-1">Keypoints help power the scoring rubric (2-6 required per card).</p>
+                  {validation.keypoints ? (
+                    <p className="text-xs text-warning-amber m-0">{validation.keypoints}</p>
+                  ) : (
+                    <p className="text-sm text-text-muted mt-1">Keypoints help power the scoring rubric (2-6 required per card).</p>
+                  )}
                 </div>
               </div>
             );

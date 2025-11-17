@@ -8,6 +8,7 @@ import type { AttemptRecord } from "../types/study";
 import type { SessionQueueState } from "../store/sessionQueue";
 import { useToast, ToastContainer } from "./Toast";
 import { AlternativeAnswersInfo } from "./AlternativeAnswersInfo";
+import { useAutoResizeTextarea } from "../hooks/useAutoResizeTextarea";
 
 interface StudyPanelProps {
   card: CardSummary | null;
@@ -141,41 +142,22 @@ function BackendStatusBanner() {
   const status = useBackendStore((state) => state.status);
   const checkHealth = useBackendStore((state) => state.checkHealth);
 
-  if (status === "healthy" || status === "unknown") {
+  // Only show for error/unreachable states
+  if (status !== "unreachable" && status !== "error") {
     return null;
   }
 
-  let bannerClass: string;
-  let indicatorColor: string;
-  let message: string;
-
-  if (status === "unreachable" || status === "error") {
-    bannerClass = "bg-incorrect-red/20 text-text-color border-2 border-incorrect-red";
-    indicatorColor = "bg-incorrect-red";
-    message = "Backend server is offline. Answers cannot be scored. Check the Backend Status section below.";
-  } else if (status === "checking") {
-    bannerClass = "bg-warning-amber/20 text-text-color border-2 border-warning-amber";
-    indicatorColor = "bg-warning-amber";
-    message = "Backend server is initializing. Please wait before submitting answers.";
-  } else {
-    bannerClass = "bg-primary/20 text-text-color border-2 border-primary";
-    indicatorColor = "bg-primary";
-    message = "Backend status unknown.";
-  }
-
   return (
-    <div className={`p-3 rounded-xl mb-4 flex items-center gap-2 text-sm font-medium hand-drawn ${bannerClass}`}>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${indicatorColor}`} aria-hidden />
-      <span className="flex-1">{message}</span>
-      {(status === "unreachable" || status === "error") && (
-        <button
-          type="button"
-          className="px-3 py-1 rounded-lg border-2 border-current bg-card-background/50 text-current cursor-pointer text-xs font-semibold hover:bg-card-background hand-drawn-btn"
-          onClick={() => void checkHealth()}
-        >
-          Retry
-        </button>
-      )}
+    <div className="p-2 px-3 rounded-lg mb-3 bg-incorrect-red/20 text-text-color border border-incorrect-red/40 flex items-center gap-2 text-sm">
+      <span className="w-2 h-2 rounded-full flex-shrink-0 bg-incorrect-red" aria-hidden />
+      <span className="flex-1">Backend offline. Answers cannot be scored.</span>
+      <button
+        type="button"
+        className="px-2 py-1 rounded-lg border border-current bg-card-background/50 text-current cursor-pointer text-xs font-semibold hover:bg-card-background"
+        onClick={() => void checkHealth()}
+      >
+        Retry
+      </button>
     </div>
   );
 }
@@ -240,11 +222,12 @@ function HelpOverlay({ onClose }: HelpOverlayProps) {
 interface SessionSummaryProps {
   deckTitle: string;
   session: SessionQueueState;
+  sessionStartedAt?: number | null;
   onRestart?: () => void;
   onReturnHome?: () => void;
 }
 
-function SessionSummary({ deckTitle, session, onRestart, onReturnHome }: SessionSummaryProps) {
+function SessionSummary({ deckTitle, session, sessionStartedAt, onRestart, onReturnHome }: SessionSummaryProps) {
   // Count unique cards reviewed
   const uniqueCardIds = new Set(session.completed.map((entry) => entry.card.id));
   const cardsReviewed = uniqueCardIds.size;
@@ -261,13 +244,47 @@ function SessionSummary({ deckTitle, session, onRestart, onReturnHome }: Session
   const needsPracticeCount =
     (verdictCounts.almost ?? 0) + (verdictCounts.missing ?? 0) + (verdictCounts.incorrect ?? 0);
 
+  // Calculate accuracy percentage
+  const totalAttempts = session.completed.length;
+  const accuracyPercent = totalAttempts > 0 ? Math.round((perfectCount / totalAttempts) * 100) : 0;
+
+  // Calculate time spent (rough estimate based on session duration)
+  const sessionDuration = sessionStartedAt ? Date.now() - sessionStartedAt : 0;
+  const minutesSpent = Math.max(1, Math.round(sessionDuration / (60 * 1000)));
+
+  // Find cards that need review (those with incorrect/almost/missing verdicts)
+  const cardsNeedingReview = session.completed
+    .filter((entry) => entry.verdict && ['incorrect', 'almost', 'missing'].includes(entry.verdict))
+    .map((entry) => entry.card)
+    .filter((card, index, self) => self.findIndex(c => c.id === card.id) === index) // unique cards
+    .slice(0, 3); // top 3
+
+  // Motivational message based on performance
+  const getMotivationalMessage = () => {
+    if (accuracyPercent >= 90) {
+      return "Outstanding work! You've mastered this material! 🌟";
+    } else if (accuracyPercent >= 75) {
+      return "Great job! You're making excellent progress! 💪";
+    } else if (accuracyPercent >= 50) {
+      return "Good effort! Keep practicing to improve! 📚";
+    } else {
+      return "Keep going! Practice makes perfect! 🎯";
+    }
+  };
+
   return (
     <div className="mt-6 p-8 rounded-xl flashcard paper-texture">
       <h3 className="text-2xl font-bold m-0 mb-3 text-text-color font-display">Session complete</h3>
       <p className="text-base text-text-muted my-2">
-        You reviewed {cardsReviewed} card{cardsReviewed !== 1 ? "s" : ""} from <strong>{deckTitle}</strong>.
+        You reviewed {cardsReviewed} card{cardsReviewed !== 1 ? "s" : ""} from <strong>{deckTitle}</strong> in {minutesSpent} minute{minutesSpent !== 1 ? 's' : ''}.
       </p>
-      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(200px,1fr))] mt-6">
+
+      {/* Motivational message */}
+      <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30 mb-6 mt-4">
+        <p className="text-base font-semibold text-primary m-0">{getMotivationalMessage()}</p>
+      </div>
+
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(150px,1fr))] mt-6">
         <div className="border-2 border-border-color/40 rounded-xl p-5 bg-card-background/60 shadow-sm">
           <p className="text-4xl font-bold m-0 text-primary">{cardsReviewed}</p>
           <p className="mt-2 text-text-muted text-sm">Cards Reviewed</p>
@@ -280,7 +297,24 @@ function SessionSummary({ deckTitle, session, onRestart, onReturnHome }: Session
           <p className="text-4xl font-bold m-0 text-warning-amber">{needsPracticeCount}</p>
           <p className="mt-2 text-text-muted text-sm">Need Practice</p>
         </div>
+        <div className="border-2 border-primary/40 rounded-xl p-5 bg-primary/10 shadow-sm">
+          <p className="text-4xl font-bold m-0 text-primary">{accuracyPercent}%</p>
+          <p className="mt-2 text-text-muted text-sm">Accuracy</p>
+        </div>
       </div>
+
+      {/* Recommendations */}
+      {cardsNeedingReview.length > 0 && (
+        <div className="mt-6 p-5 rounded-xl bg-warning-amber/10 border-2 border-warning-amber/30">
+          <p className="text-base font-bold text-text-color m-0 mb-3">📋 Recommended Review</p>
+          <p className="text-sm text-text-muted mb-3">Focus on these cards in your next session:</p>
+          <ul className="m-0 pl-5 text-text-color text-sm space-y-2">
+            {cardsNeedingReview.map((card) => (
+              <li key={card.id} className="font-medium">{card.prompt}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {(onRestart || onReturnHome) && (
         <div className="flex gap-3 mt-6 flex-wrap">
           {onReturnHome && (
@@ -316,11 +350,12 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const [isFlipped, setIsFlipped] = useState(false);
   const [showHelpOverlay, setShowHelpOverlay] = useState(false);
   const [showAlternativeAnswersInfo, setShowAlternativeAnswersInfo] = useState(false);
+  const [showHints, setShowHints] = useState(false);
   const { toasts, showToast, closeToast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const arrowContainerRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useAutoResizeTextarea<HTMLTextAreaElement>(answer, 192, 500); // min: 12rem (192px), max: 500px
   const [arrowOffset, setArrowOffset] = useState(0);
   const previousCardIdRef = useRef<string | null>(null);
   const status = useStudyStore((state) => state.status);
@@ -521,9 +556,10 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     };
   }, [handleKeydown]);
 
-  // Reset flip state when card changes
+  // Reset flip state and hints when card changes
   useEffect(() => {
     setIsFlipped(false);
+    setShowHints(false);
   }, [card?.id]);
 
   // Auto-flip to back after submitting to show verdict
@@ -568,6 +604,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       <SessionSummary
         deckTitle={deckTitle}
         session={session}
+        sessionStartedAt={sessionStartedAt}
         onRestart={sessionDeck ? handleRestartSession : undefined}
         onReturnHome={onReturnHome}
       />
@@ -772,7 +809,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                   <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
                     <textarea
                       ref={textareaRef}
-                      className="w-full flex-1 min-h-[12rem] resize-y hand-drawn-input text-text-color focus:outline-none text-base mb-4 leading-relaxed font-sans"
+                      className="w-full flex-1 resize-none overflow-hidden hand-drawn-input text-text-color focus:outline-none text-base mb-4 leading-relaxed font-sans"
                       value={answer}
                       onChange={(event) => setAnswer(event.target.value)}
                       onKeyDown={handleTextareaKeyDown}
@@ -781,6 +818,39 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                       style={{ lineHeight: '2rem' }}
                       autoFocus
                     />
+                    {/* Hints section */}
+                    {card.keypoints && card.keypoints.length > 0 && (
+                      <div className="mb-4">
+                        {!showHints ? (
+                          <button
+                            type="button"
+                            className="px-4 py-2 rounded-lg border-2 border-border-color bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color text-sm hand-drawn-btn"
+                            onClick={() => setShowHints(true)}
+                          >
+                            💡 Show Hints ({card.keypoints.length} keypoints)
+                          </button>
+                        ) : (
+                          <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/40 hand-drawn">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-bold text-primary m-0">💡 Hints (Key Concepts to Include)</p>
+                              <button
+                                type="button"
+                                className="text-xs text-text-muted hover:text-text-color underline"
+                                onClick={() => setShowHints(false)}
+                              >
+                                Hide
+                              </button>
+                            </div>
+                            <ul className="m-0 pl-5 text-text-color text-sm space-y-1">
+                              {card.keypoints.map((keypoint, idx) => (
+                                <li key={idx}>{keypoint}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center gap-4 flex-wrap">
                       <button
                         type="submit"
@@ -837,13 +907,16 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
 
                       {/* Show missing keypoints prominently if any */}
                       {missingKeypoints.length > 0 && (
-                        <div className="mb-4 p-3 rounded-xl bg-card-background/90 border-2 border-text-color/20 shadow-sm">
-                          <p className="text-sm font-semibold text-text-color m-0 mb-2">
-                            Missing Key Concepts ({missingKeypoints.length})
-                          </p>
-                          <ul className="m-0 pl-5 text-text-color text-sm">
+                        <div className="mb-4 p-4 rounded-xl bg-warning-amber/30 border-2 border-warning-amber shadow-md">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-xl flex-shrink-0">⚠</span>
+                            <p className="text-base font-bold text-text-color m-0">
+                              Missing Key Concepts ({missingKeypoints.length})
+                            </p>
+                          </div>
+                          <ul className="m-0 pl-5 text-text-color text-sm space-y-1">
                             {missingKeypoints.map((keypoint) => (
-                              <li key={keypoint} className="mb-1">
+                              <li key={keypoint} className="font-medium">
                                 {keypoint}
                               </li>
                             ))}
@@ -875,7 +948,10 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                             className="flex-1 px-6 py-3 rounded-full border-2 border-primary bg-card-background text-primary font-bold hand-drawn-btn hover:bg-primary/10 text-base"
                             onClick={() => {
                               setIsFlipped(false);
-                              setAnswer('');
+                              // Keep the previous answer so user can edit it
+                              if (verdictForCard?.userAnswer) {
+                                setAnswer(verdictForCard.userAnswer);
+                              }
                             }}
                           >
                             Try Again

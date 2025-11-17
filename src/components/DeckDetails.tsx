@@ -8,7 +8,7 @@ import { StudyPanel } from "./StudyPanel";
 import { DeckHomeScreen } from "./DeckHomeScreen";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
-import type { CardPayload, Deck } from "../types/deck";
+import type { CardPayload, CardSchedule, Deck } from "../types/deck";
 
 type EditorPayload = {
   title: string;
@@ -35,7 +35,8 @@ function createDeckExportPayload(deck: Deck): string {
           prompt: card.prompt,
           answer: card.answer ?? "",
           keypoints: card.keypoints ?? [],
-          schedule: card.schedule ?? null
+          schedule: card.schedule ?? null,
+          alternativeAnswers: card.alternativeAnswers ?? []
         }))
       }
     },
@@ -139,12 +140,22 @@ function parseDeckImport(content: string): EditorPayload {
       }
     }
 
+    // Parse alternative answers if present
+    let alternativeAnswers: string[] = [];
+    const alternativeAnswersValue = entry.alternativeAnswers;
+    if (Array.isArray(alternativeAnswersValue)) {
+      alternativeAnswers = alternativeAnswersValue
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .filter((value) => value.length > 0);
+    }
+
     return {
       id: typeof entry.id === "string" ? entry.id : undefined,
       prompt: prompt.trim(),
       answer: answer.trim(),
       keypoints: keypointItems,
-      schedule: schedule
+      schedule: schedule,
+      alternativeAnswers: alternativeAnswers.length > 0 ? alternativeAnswers : undefined
     };
   });
 

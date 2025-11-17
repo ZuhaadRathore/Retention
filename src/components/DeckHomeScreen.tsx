@@ -1,4 +1,5 @@
 import type { Deck } from "../types/deck";
+import { formatRelativeTime } from "../utils/time";
 
 interface DeckHomeScreenProps {
   deck: Deck;
@@ -16,10 +17,28 @@ function formatDate(date: string): string {
 function calculateDeckStats(deck: Deck) {
   const totalCards = deck.cards.length;
   const archivedCount = deck.cards.filter(card => card.archived).length;
+  const now = new Date();
+
+  // Find cards due for review
+  const dueCards = deck.cards.filter((card) => {
+    if (!card.schedule?.dueAt) return false;
+    return new Date(card.schedule.dueAt) <= now;
+  });
+
+  // Find next due card
+  const cardsWithSchedules = deck.cards
+    .filter(card => card.schedule?.dueAt)
+    .map(card => ({ card, dueAt: new Date(card.schedule!.dueAt) }))
+    .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+
+  const nextDue = cardsWithSchedules.length > 0 ? cardsWithSchedules[0] : null;
 
   return {
     totalCards,
-    archivedCount
+    archivedCount,
+    dueCount: dueCards.length,
+    nextDueAt: nextDue?.dueAt.toISOString(),
+    studiedCount: deck.cards.filter(card => card.schedule).length
   };
 }
 
@@ -46,6 +65,20 @@ export function DeckHomeScreen({ deck, onStartStudying, onEdit, onExport, onDele
           <p className="mt-2 text-text-muted text-sm">Total Cards</p>
         </div>
 
+        {stats.studiedCount > 0 && (
+          <div className="border-2 border-correct-green/40 rounded-xl p-5 bg-correct-green/10 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-4xl font-bold m-0 text-correct-green">{stats.studiedCount}</p>
+            <p className="mt-2 text-text-muted text-sm">Studied</p>
+          </div>
+        )}
+
+        {stats.dueCount > 0 && (
+          <div className="border-2 border-primary/40 rounded-xl p-5 bg-primary/10 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-4xl font-bold m-0 text-primary">{stats.dueCount}</p>
+            <p className="mt-2 text-text-muted text-sm">Due for Review</p>
+          </div>
+        )}
+
         {stats.archivedCount > 0 && (
           <div className="border-2 border-border-color rounded-xl p-5 bg-card-background/60 shadow-sm hover:shadow-md transition-shadow">
             <p className="text-4xl font-bold m-0 text-text-muted">{stats.archivedCount}</p>
@@ -53,6 +86,15 @@ export function DeckHomeScreen({ deck, onStartStudying, onEdit, onExport, onDele
           </div>
         )}
       </div>
+
+      {/* Next Review Info */}
+      {stats.nextDueAt && (
+        <div className="mb-8 p-4 rounded-xl bg-primary/10 border-2 border-primary/30">
+          <p className="text-sm font-semibold text-primary m-0">
+            📅 Next review: {formatRelativeTime(stats.nextDueAt)}
+          </p>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="mb-8">
