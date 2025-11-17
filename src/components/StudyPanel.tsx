@@ -390,6 +390,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     } else if (key === "n") {
       event.preventDefault();
       dispatchSession({ type: "next", verdict: verdictForCard.verdict });
+    }
   }, [
     answer,
     busy,
