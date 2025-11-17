@@ -629,6 +629,26 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
         </p>
       </div>
 
+      {/* Progress Indicator */}
+      {session.total > 0 && (
+        <div className="mb-6 p-4 rounded-xl bg-card-background border-2 border-border-color/40 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-text-color m-0">
+              Card {session.completed.length + 1} of {session.total}
+            </p>
+            <p className="text-xs text-text-muted m-0">
+              {Math.round(((session.completed.length) / session.total) * 100)}% complete
+            </p>
+          </div>
+          <div className="w-full h-2 bg-border-color/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${(session.completed.length / session.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Flip Card Container with Arrow Navigation */}
       <div ref={arrowContainerRef} className="flex items-start gap-4">
         {/* Left Arrow - Move current card to back of pile */}
