@@ -101,6 +101,33 @@ VERDICT_TO_QUALITY = {
 
 MIN_SUCCESS_QUALITY = 3
 
+# Security limits for bulk operations
+MAX_BULK_CARDS = 500  # Conservative limit below SQLite's default 999 parameter limit
+MAX_ID_LENGTH = 100   # Maximum length for UUID/ID strings
+
+
+def _validate_card_ids(card_ids: List[str], max_count: int = MAX_BULK_CARDS) -> None:
+    """
+    Validate card ID array for security and integrity.
+
+    Raises ValueError if validation fails.
+    """
+    if not card_ids:
+        raise ValueError("card_ids cannot be empty")
+
+    if len(card_ids) > max_count:
+        raise ValueError(f"Too many cards: {len(card_ids)} exceeds maximum of {max_count}")
+
+    for card_id in card_ids:
+        if not isinstance(card_id, str):
+            raise ValueError(f"Invalid card_id type: expected str, got {type(card_id).__name__}")
+
+        if len(card_id) > MAX_ID_LENGTH:
+            raise ValueError(f"card_id too long: {len(card_id)} exceeds maximum of {MAX_ID_LENGTH}")
+
+        if not card_id.strip():
+            raise ValueError("card_id cannot be empty or whitespace")
+
 
 class Database:
     """Lazy SQLite connector used by the sidecar."""
@@ -534,10 +561,17 @@ class Database:
         """Apply bulk operations to multiple cards in a deck."""
         from .models import BulkOperationType
 
+        # Security: Validate input before processing
+        try:
+            _validate_card_ids(card_ids)
+        except ValueError as e:
+            raise ValueError(f"Invalid card_ids: {e}")
+
         conn = self._require_connection()
         timestamp = _utc_now()
 
         # Verify all cards belong to this deck
+        # Security: Using validated card_ids with parameterized query
         placeholders = ",".join("?" * len(card_ids))
         cursor = await conn.execute(
             f"SELECT id FROM cards WHERE deck_id = ? AND id IN ({placeholders})",
@@ -551,6 +585,7 @@ class Database:
         # Perform the operation
         if operation == BulkOperationType.archive:
             # Archive cards
+            # Security: Using validated valid_cards with parameterized query
             placeholders = ",".join("?" * len(valid_cards))
             await conn.execute(
                 f"UPDATE cards SET archived = 1, updated_at = ? WHERE id IN ({placeholders})",
@@ -558,6 +593,7 @@ class Database:
             )
         elif operation == BulkOperationType.unarchive:
             # Unarchive cards
+            # Security: Using validated valid_cards with parameterized query
             placeholders = ",".join("?" * len(valid_cards))
             await conn.execute(
                 f"UPDATE cards SET archived = 0, updated_at = ? WHERE id IN ({placeholders})",
