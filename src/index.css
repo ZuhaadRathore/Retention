@@ -35,6 +35,18 @@ a:focus-visible {
     border-radius: 4px;
 }
 
+/* Consistent disabled state styling */
+button:disabled,
+button[disabled],
+input:disabled,
+input[disabled],
+textarea:disabled,
+textarea[disabled],
+select:disabled,
+select[disabled] {
+    cursor: not-allowed;
+}
+
 .flip-card {
     perspective: 1000px;
 }
@@ -157,6 +169,13 @@ a:focus-visible {
         outline-offset: 2px;
     }
 
+    .hand-drawn-input:disabled,
+    .hand-drawn-input[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #f5f5f5;
+    }
+
     .hand-drawn-btn {
         border: 2.5px solid #8D6E63;
         border-radius: 9999px;
@@ -180,6 +199,13 @@ a:focus-visible {
     .hand-drawn-btn:focus-visible {
         outline: 3px solid #8B4513;
         outline-offset: 2px;
+    }
+
+    .hand-drawn-btn:disabled,
+    .hand-drawn-btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     .hand-drawn-feedback {
