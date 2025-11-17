@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import type { CardPayload } from "../types/deck";
+import { usePlainTextPaste } from "../hooks/usePlainTextPaste";
 
 interface DeckDraftCard {
   tempId: string;
@@ -141,6 +142,7 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
   const [error, setError] = useState<string | null>(null);
   const [cardValidations, setCardValidations] = useState<Record<string, ReturnType<typeof validateCard>>>({});
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const handlePlainTextPaste = usePlainTextPaste();
 
   useEffect(() => {
     setDraft(toDraft(initialDeck));
@@ -307,8 +309,13 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
             }))
           }
           placeholder="e.g. Neuroanatomy Foundations"
+          maxLength={200}
         />
-        {!draft.title.trim() && <p className="text-xs text-warning-amber m-0">Deck title is required</p>}
+        {!draft.title.trim() ? (
+          <p className="text-xs text-warning-amber m-0">Deck title is required</p>
+        ) : (
+          <p className="text-xs text-text-muted m-0">{draft.title.length}/200 characters</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -326,8 +333,11 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
               description: event.target.value
             }))
           }
+          onPaste={handlePlainTextPaste}
           placeholder="Optional notes about this deck"
+          maxLength={1000}
         />
+        <p className="text-xs text-text-muted m-0">{draft.description.length}/1000 characters</p>
       </div>
 
       <div>
@@ -453,9 +463,14 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                         prompt: event.target.value
                       }))
                     }
+                    onPaste={handlePlainTextPaste}
                     placeholder="What is the main idea of photosynthesis?"
+                    maxLength={500}
                   />
                   {validation.prompt && <p className="text-xs text-warning-amber m-0">{validation.prompt}</p>}
+                  {card.prompt.trim().length > 400 && (
+                    <p className="text-xs text-text-muted m-0">{card.prompt.length}/500 characters</p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 mb-4">
                   <label className="text-base font-semibold text-text-color" htmlFor={"answer-" + card.tempId}>
@@ -472,9 +487,14 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                         answer: event.target.value
                       }))
                     }
+                    onPaste={handlePlainTextPaste}
                     placeholder="A light-driven process that converts carbon dioxide and water into glucose and oxygen."
+                    maxLength={2000}
                   />
                   {validation.answer && <p className="text-xs text-warning-amber m-0">{validation.answer}</p>}
+                  {card.answer.trim().length > 1800 && (
+                    <p className="text-xs text-text-muted m-0">{card.answer.length}/2000 characters</p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-base font-semibold text-text-color" htmlFor={"keypoints-" + card.tempId}>
@@ -495,7 +515,9 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                         keypointsText: event.target.value
                       }))
                     }
+                    onPaste={handlePlainTextPaste}
                     placeholder={"chloroplasts\nlight-dependent reactions\nATP generation"}
+                    maxLength={600}
                   />
                   {validation.keypoints ? (
                     <p className="text-xs text-warning-amber m-0">{validation.keypoints}</p>

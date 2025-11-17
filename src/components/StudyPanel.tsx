@@ -9,6 +9,7 @@ import type { SessionQueueState } from "../store/sessionQueue";
 import { useToast, ToastContainer } from "./Toast";
 import { AlternativeAnswersInfo } from "./AlternativeAnswersInfo";
 import { useAutoResizeTextarea } from "../hooks/useAutoResizeTextarea";
+import { usePlainTextPaste } from "../hooks/usePlainTextPaste";
 
 interface StudyPanelProps {
   card: CardSummary | null;
@@ -234,6 +235,33 @@ function BackendStatusBanner() {
   );
 }
 
+interface SessionTimeoutWarningProps {
+  sessionStartedAt: number;
+}
+
+function SessionTimeoutWarning({ sessionStartedAt }: SessionTimeoutWarningProps) {
+  const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const WARNING_THRESHOLD_MS = 23 * 60 * 60 * 1000; // 23 hours
+
+  const sessionAge = Date.now() - sessionStartedAt;
+  const hoursRemaining = Math.ceil((MAX_SESSION_AGE_MS - sessionAge) / (60 * 60 * 1000));
+
+  // Only show warning if session is older than 23 hours but not expired
+  if (sessionAge < WARNING_THRESHOLD_MS || sessionAge >= MAX_SESSION_AGE_MS) {
+    return null;
+  }
+
+  return (
+    <div className="p-2 px-3 rounded-lg mb-3 bg-warning-amber/20 text-text-color border border-warning-amber/40 flex items-center gap-2 text-sm">
+      <span className="text-warning-amber font-semibold flex-shrink-0">⚠</span>
+      <span className="flex-1">
+        Session expiring soon! This session will reset in about {hoursRemaining} hour{hoursRemaining !== 1 ? 's' : ''}.
+        Complete your cards or your progress will be lost.
+      </span>
+    </div>
+  );
+}
+
 interface HelpOverlayProps {
   onClose: () => void;
 }
@@ -431,6 +459,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const arrowContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useAutoResizeTextarea<HTMLTextAreaElement>(answer, 192, 500); // min: 12rem (192px), max: 500px
   const [arrowOffset, setArrowOffset] = useState(0);
+  const handlePlainTextPaste = usePlainTextPaste();
   const previousCardIdRef = useRef<string | null>(null);
   const status = useStudyStore((state) => state.status);
   const lastAttempt = useStudyStore((state) => state.lastAttempt);
@@ -850,6 +879,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
         />
       )}
       <BackendStatusBanner />
+      {sessionStartedAt && <SessionTimeoutWarning sessionStartedAt={sessionStartedAt} />}
 
       <div className="flex items-center justify-between mb-4">
         <p className="text-text-muted text-sm m-0">
@@ -920,6 +950,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                       value={answer}
                       onChange={(event) => setAnswer(event.target.value)}
                       onKeyDown={handleTextareaKeyDown}
+                      onPaste={handlePlainTextPaste}
                       placeholder="Write your answer here..."
                       disabled={busy}
                       style={{ lineHeight: '2rem' }}
@@ -1123,6 +1154,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                               className="w-full hand-drawn-input text-text-color focus:outline-none text-sm min-h-[80px] resize-y mb-3"
                               value={reportComment}
                               onChange={(e) => setReportComment(e.target.value)}
+                              onPaste={handlePlainTextPaste}
                               placeholder="e.g., My answer covered all the key points but was marked as missing keypoints..."
                             />
                             <div className="flex gap-2">

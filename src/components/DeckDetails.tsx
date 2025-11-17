@@ -440,8 +440,16 @@ export function DeckDetails() {
   if (status === "loading" && !deck) {
     return (
       <div className="p-8 flashcard paper-texture min-h-[20rem]">
-        <h2 className="text-2xl font-bold m-0 mb-3 text-text-color dark:text-white font-display">Loading deck</h2>
-        <p className="text-base text-text-muted dark:text-text-muted mb-4">Fetching the latest deck data...</p>
+        {/* Loading Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 bg-border-color/30 rounded-lg w-3/4 mb-4"></div>
+          <div className="h-4 bg-border-color/20 rounded-lg w-1/2 mb-6"></div>
+          <div className="space-y-3">
+            <div className="h-32 bg-border-color/20 rounded-xl"></div>
+            <div className="h-32 bg-border-color/20 rounded-xl"></div>
+            <div className="h-32 bg-border-color/20 rounded-xl"></div>
+          </div>
+        </div>
       </div>
     );
   }

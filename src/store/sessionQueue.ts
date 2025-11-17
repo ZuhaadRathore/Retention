@@ -238,7 +238,55 @@ export function sessionQueueReducer(
 }
 
 function sortCardsForSession(cards: CardSummary[]): CardSummary[] {
-  return cards.map(cloneCard);
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  return cards
+    .map(cloneCard)
+    .filter((card) => !card.archived) // Filter out archived cards
+    .sort((a, b) => {
+      const aSchedule = a.schedule;
+      const bSchedule = b.schedule;
+
+      // Cards without schedule (new cards) go to the end
+      if (!aSchedule && !bSchedule) return 0;
+      if (!aSchedule) return 1;
+      if (!bSchedule) return -1;
+
+      const aDueDate = new Date(aSchedule.dueAt);
+      const bDueDate = new Date(bSchedule.dueAt);
+      const aDueDay = aSchedule.dueAt.split('T')[0];
+      const bDueDay = bSchedule.dueAt.split('T')[0];
+
+      // Check if cards are overdue
+      const aOverdue = aDueDate < now;
+      const bOverdue = bDueDate < now;
+
+      // Prioritize overdue cards
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+
+      // If both overdue, prioritize by how long overdue (oldest first)
+      if (aOverdue && bOverdue) {
+        return aDueDate.getTime() - bDueDate.getTime();
+      }
+
+      // Check if cards are due today
+      const aDueToday = aDueDay === today;
+      const bDueToday = bDueDay === today;
+
+      // Prioritize cards due today
+      if (aDueToday && !bDueToday) return -1;
+      if (!aDueToday && bDueToday) return 1;
+
+      // If both due today or both due in future, prioritize by interval (shorter intervals first)
+      if (aDueToday && bDueToday) {
+        return aSchedule.interval - bSchedule.interval;
+      }
+
+      // For future cards, prioritize by due date (soonest first)
+      return aDueDate.getTime() - bDueDate.getTime();
+    });
 }
 
 function cloneCard(card: CardSummary): CardSummary {
