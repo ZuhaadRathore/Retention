@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
 import { useBackendStore } from "../store/backendStore";
+import { ONE_MINUTE_MS, ONE_HOUR_MS, ONE_DAY_MS, MAX_SESSION_AGE_MS, SESSION_WARNING_THRESHOLD_MS } from "../constants/time";
 import type { CardSummary, CardPayload } from "../types/deck";
 import type { AttemptRecord } from "../types/study";
 import type { SessionQueueState } from "../store/sessionQueue";
@@ -137,9 +138,9 @@ function AttemptHistory({ attempts, onDeleteAttempt }: AttemptHistoryProps) {
 
 function formatSessionAge(timestampMs: number): string {
   const ageMs = Date.now() - timestampMs;
-  const minutes = Math.floor(ageMs / (60 * 1000));
-  const hours = Math.floor(ageMs / (60 * 60 * 1000));
-  const days = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+  const minutes = Math.floor(ageMs / ONE_MINUTE_MS);
+  const hours = Math.floor(ageMs / ONE_HOUR_MS);
+  const days = Math.floor(ageMs / ONE_DAY_MS);
 
   if (days > 0) {
     return `${days} day${days > 1 ? "s" : ""} ago`;
@@ -240,14 +241,11 @@ interface SessionTimeoutWarningProps {
 }
 
 function SessionTimeoutWarning({ sessionStartedAt }: SessionTimeoutWarningProps) {
-  const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
-  const WARNING_THRESHOLD_MS = 23 * 60 * 60 * 1000; // 23 hours
-
   const sessionAge = Date.now() - sessionStartedAt;
-  const hoursRemaining = Math.ceil((MAX_SESSION_AGE_MS - sessionAge) / (60 * 60 * 1000));
+  const hoursRemaining = Math.ceil((MAX_SESSION_AGE_MS - sessionAge) / ONE_HOUR_MS);
 
   // Only show warning if session is older than 23 hours but not expired
-  if (sessionAge < WARNING_THRESHOLD_MS || sessionAge >= MAX_SESSION_AGE_MS) {
+  if (sessionAge < SESSION_WARNING_THRESHOLD_MS || sessionAge >= MAX_SESSION_AGE_MS) {
     return null;
   }
 

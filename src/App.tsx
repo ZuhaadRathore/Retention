@@ -12,37 +12,9 @@ import { useBackendStore } from "./store/backendStore";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { useToast, ToastContainer } from "./components/Toast";
 import { APP_VERSION } from "./version";
+import { normalizeFilename, createDeckExportPayload } from "./utils/deckImportExport";
+import { HEALTH_CHECK_INTERVAL_MS } from "./constants/time";
 import type { CardPayload, CardSchedule, Deck } from "./types/deck";
-
-// Helper functions for import/export (duplicated from DeckDetails for now)
-function normalizeFilename(title: string): string {
-  const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  return (base.length > 0 ? base : "deck") + ".json";
-}
-
-function createDeckExportPayload(deck: Deck): string {
-  return JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      deck: {
-        id: deck.id,
-        title: deck.title,
-        description: deck.description ?? "",
-        cards: deck.cards.map((card) => ({
-          id: card.id,
-          prompt: card.prompt,
-          answer: card.answer ?? "",
-          keypoints: card.keypoints ?? [],
-          schedule: card.schedule ?? null,
-          alternativeAnswers: card.alternativeAnswers ?? []
-        }))
-      }
-    },
-    null,
-    2
-  );
-}
 
 // Security: Validation constants for deck import
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
@@ -249,10 +221,10 @@ function App() {
   useEffect(() => {
     void checkHealth();
 
-    // Poll backend health every 30 seconds
+    // Poll backend health periodically
     const interval = setInterval(() => {
       void checkHealth();
-    }, 30000);
+    }, HEALTH_CHECK_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [checkHealth]);
