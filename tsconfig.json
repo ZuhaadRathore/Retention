@@ -3,7 +3,14 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "types": ["vite/client", "vitest"],
-    "baseUrl": "."
+    "baseUrl": ".",
+
+    // Additional strict mode options not included in "strict"
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
