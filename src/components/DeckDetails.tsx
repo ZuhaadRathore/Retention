@@ -10,6 +10,7 @@ import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { useToast, ToastContainer } from "./Toast";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
+import { normalizeFilename, createDeckExportPayload } from "../utils/deckImportExport";
 import type { CardPayload, CardSchedule, Deck } from "../types/deck";
 
 type EditorPayload = {
@@ -17,35 +18,6 @@ type EditorPayload = {
   description?: string;
   cards: CardPayload[];
 };
-
-function normalizeFilename(title: string): string {
-  const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  return (base.length > 0 ? base : "deck") + ".json";
-}
-
-function createDeckExportPayload(deck: Deck): string {
-  return JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      deck: {
-        id: deck.id,
-        title: deck.title,
-        description: deck.description ?? "",
-        cards: deck.cards.map((card) => ({
-          id: card.id,
-          prompt: card.prompt,
-          answer: card.answer ?? "",
-          keypoints: card.keypoints ?? [],
-          schedule: card.schedule ?? null,
-          alternativeAnswers: card.alternativeAnswers ?? []
-        }))
-      }
-    },
-    null,
-    2
-  );
-}
 
 function parseDeckImport(content: string): EditorPayload {
   let data: unknown;

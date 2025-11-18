@@ -3,11 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
 import { useBackendStore } from "../store/backendStore";
+import { ONE_MINUTE_MS, ONE_HOUR_MS, ONE_DAY_MS, MAX_SESSION_AGE_MS, SESSION_WARNING_THRESHOLD_MS } from "../constants/time";
 import type { CardSummary, CardPayload } from "../types/deck";
 import type { AttemptRecord } from "../types/study";
 import type { SessionQueueState } from "../store/sessionQueue";
 import { useToast, ToastContainer } from "./Toast";
 import { AlternativeAnswersInfo } from "./AlternativeAnswersInfo";
+import { ConfirmModal } from "./ConfirmModal";
 import { useAutoResizeTextarea } from "../hooks/useAutoResizeTextarea";
 import { usePlainTextPaste } from "../hooks/usePlainTextPaste";
 
@@ -137,9 +139,9 @@ function AttemptHistory({ attempts, onDeleteAttempt }: AttemptHistoryProps) {
 
 function formatSessionAge(timestampMs: number): string {
   const ageMs = Date.now() - timestampMs;
-  const minutes = Math.floor(ageMs / (60 * 1000));
-  const hours = Math.floor(ageMs / (60 * 60 * 1000));
-  const days = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+  const minutes = Math.floor(ageMs / ONE_MINUTE_MS);
+  const hours = Math.floor(ageMs / ONE_HOUR_MS);
+  const days = Math.floor(ageMs / ONE_DAY_MS);
 
   if (days > 0) {
     return `${days} day${days > 1 ? "s" : ""} ago`;
@@ -240,14 +242,11 @@ interface SessionTimeoutWarningProps {
 }
 
 function SessionTimeoutWarning({ sessionStartedAt }: SessionTimeoutWarningProps) {
-  const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
-  const WARNING_THRESHOLD_MS = 23 * 60 * 60 * 1000; // 23 hours
-
   const sessionAge = Date.now() - sessionStartedAt;
-  const hoursRemaining = Math.ceil((MAX_SESSION_AGE_MS - sessionAge) / (60 * 60 * 1000));
+  const hoursRemaining = Math.ceil((MAX_SESSION_AGE_MS - sessionAge) / ONE_HOUR_MS);
 
   // Only show warning if session is older than 23 hours but not expired
-  if (sessionAge < WARNING_THRESHOLD_MS || sessionAge >= MAX_SESSION_AGE_MS) {
+  if (sessionAge < SESSION_WARNING_THRESHOLD_MS || sessionAge >= MAX_SESSION_AGE_MS) {
     return null;
   }
 
@@ -453,6 +452,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   const [showHints, setShowHints] = useState(false);
   const [showReportIssue, setShowReportIssue] = useState(false);
   const [reportComment, setReportComment] = useState("");
+  const [showClipboardConfirm, setShowClipboardConfirm] = useState(false);
+  const [pendingReportData, setPendingReportData] = useState<any>(null);
   const { toasts, showToast, closeToast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -652,12 +653,19 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     submitCurrentAnswer
   ]);
 
+  // Performance: Use ref pattern to avoid excessive event listener add/remove cycles
+  const handleKeydownRef = useRef(handleKeydown);
   useEffect(() => {
-    window.addEventListener("keydown", handleKeydown);
-    return () => {
-      window.removeEventListener("keydown", handleKeydown);
-    };
+    handleKeydownRef.current = handleKeydown;
   }, [handleKeydown]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => handleKeydownRef.current(e);
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
+  }, []); // Empty deps - listener is stable, but calls latest handleKeydown via ref
 
   // Reset flip state and hints when card changes
   useEffect(() => {
@@ -844,18 +852,33 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       timestamp: new Date().toISOString()
     };
 
-    // For now, just copy to clipboard and show toast
-    // In a real implementation, this would send to a backend endpoint
-    navigator.clipboard.writeText(JSON.stringify(reportData, null, 2))
+    // Security: Show confirmation before copying sensitive data to clipboard
+    setPendingReportData(reportData);
+    setShowClipboardConfirm(true);
+  }, [card, verdictForCard, reportComment]);
+
+  const handleConfirmClipboardCopy = useCallback(() => {
+    if (!pendingReportData) return;
+
+    // Copy to clipboard after user consent
+    navigator.clipboard.writeText(JSON.stringify(pendingReportData, null, 2))
       .then(() => {
         showToast("Issue report copied to clipboard. Please share with the development team.", "success");
         setShowReportIssue(false);
         setReportComment("");
+        setShowClipboardConfirm(false);
+        setPendingReportData(null);
       })
       .catch(() => {
         showToast("Failed to copy report. Please try again.", "error");
+        setShowClipboardConfirm(false);
       });
-  }, [card, verdictForCard, reportComment, showToast]);
+  }, [pendingReportData, showToast]);
+
+  const handleCancelClipboardCopy = useCallback(() => {
+    setShowClipboardConfirm(false);
+    setPendingReportData(null);
+  }, []);
 
   const showRestorationBanner =
     sessionWasRestored &&
@@ -867,6 +890,33 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
   return (
     <div ref={containerRef} className="mt-6">
       <ToastContainer toasts={toasts} onClose={closeToast} />
+
+      {/* Security: Clipboard confirmation modal */}
+      {showClipboardConfirm && (
+        <ConfirmModal
+          title="Copy to Clipboard?"
+          message={
+            <div>
+              <p className="mb-2">This will copy sensitive study data to your clipboard, including:</p>
+              <ul className="list-disc list-inside text-xs space-y-1 ml-2">
+                <li>Your answer and the expected answer</li>
+                <li>AI scoring details and feedback</li>
+                <li>Your personal comment</li>
+              </ul>
+              <p className="mt-3 text-xs">
+                The clipboard can be accessed by other applications. Only proceed if you're ready to share
+                this information with the development team.
+              </p>
+            </div>
+          }
+          confirmLabel="Copy to Clipboard"
+          cancelLabel="Cancel"
+          onConfirm={handleConfirmClipboardCopy}
+          onCancel={handleCancelClipboardCopy}
+          variant="warning"
+        />
+      )}
+
       {showRestorationBanner && (
         <SessionRestorationBanner
           deckTitle={sessionDeck.title}
@@ -890,8 +940,9 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
           className="px-3 py-1.5 rounded-lg border-2 border-border-color/50 bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color hover:border-primary/50 text-xs font-medium transition-colors hand-drawn-btn flex items-center gap-1.5"
           onClick={() => setShowHelpOverlay(true)}
           title="View keyboard shortcuts"
+          aria-label="View keyboard shortcuts and help information"
         >
-          <span className="text-sm">⌨</span>
+          <span className="text-sm" aria-hidden="true">⌨</span>
           <span>Press ? for shortcuts</span>
         </button>
       </div>
@@ -944,7 +995,11 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                   <h3 className="text-3xl font-bold m-0 mb-6 text-text-color font-display">{card.prompt}</h3>
 
                   <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+                    <label htmlFor="answer-input" className="sr-only">
+                      Your answer to the flashcard question
+                    </label>
                     <textarea
+                      id="answer-input"
                       ref={textareaRef}
                       className="w-full flex-1 resize-none overflow-hidden hand-drawn-input text-text-color focus:outline-none text-base mb-4 leading-relaxed font-sans"
                       value={answer}
@@ -955,6 +1010,8 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                       disabled={busy}
                       style={{ lineHeight: '2rem' }}
                       autoFocus
+                      aria-label="Your answer to the flashcard question"
+                      aria-required="true"
                     />
                     {/* Hints section */}
                     {card.keypoints && card.keypoints.length > 0 && (

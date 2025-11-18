@@ -5,44 +5,35 @@ import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { DeckDetails } from "./components/DeckDetails";
 import { DeckList } from "./components/DeckList";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useDeckStore } from "./store/deckStore";
 import { useStudyStore } from "./store/studyStore";
 import { useBackendStore } from "./store/backendStore";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { useToast, ToastContainer } from "./components/Toast";
+import { APP_VERSION } from "./version";
+import { normalizeFilename, createDeckExportPayload } from "./utils/deckImportExport";
+import { HEALTH_CHECK_INTERVAL_MS } from "./constants/time";
 import type { CardPayload, CardSchedule, Deck } from "./types/deck";
 
-// Helper functions for import/export (duplicated from DeckDetails for now)
-function normalizeFilename(title: string): string {
-  const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  return (base.length > 0 ? base : "deck") + ".json";
-}
-
-function createDeckExportPayload(deck: Deck): string {
-  return JSON.stringify(
-    {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      deck: {
-        id: deck.id,
-        title: deck.title,
-        description: deck.description ?? "",
-        cards: deck.cards.map((card) => ({
-          id: card.id,
-          prompt: card.prompt,
-          answer: card.answer ?? "",
-          keypoints: card.keypoints ?? [],
-          schedule: card.schedule ?? null,
-          alternativeAnswers: card.alternativeAnswers ?? []
-        }))
-      }
-    },
-    null,
-    2
-  );
-}
+// Security: Validation constants for deck import
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB max file size
+const MAX_TITLE_LENGTH = 500;
+const MAX_DESCRIPTION_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 1000;
+const MAX_ANSWER_LENGTH = 5000;
+const MAX_CARDS_PER_DECK = 1000;
+const MAX_KEYPOINT_LENGTH = 200;
 
 function parseDeckImport(content: string): { title: string; description?: string; cards: CardPayload[] } {
+  // Security: Validate file size before parsing
+  const contentSizeBytes = new Blob([content]).size;
+  if (contentSizeBytes > MAX_FILE_SIZE) {
+    throw new Error(
+      `File is too large (${(contentSizeBytes / 1024 / 1024).toFixed(2)}MB). Maximum allowed size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`
+    );
+  }
+
   let data: unknown;
   try {
     data = JSON.parse(content);
@@ -67,11 +58,31 @@ function parseDeckImport(content: string): { title: string; description?: string
     throw new Error("Deck title is required.");
   }
 
+  // Security: Validate title length
+  if (title.length > MAX_TITLE_LENGTH) {
+    throw new Error(`Deck title is too long (max ${MAX_TITLE_LENGTH} characters).`);
+  }
+
   const description =
     typeof record.description === "string" ? record.description.trim() : undefined;
+
+  // Security: Validate description length
+  if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+    throw new Error(
+      `Deck description is too long (max ${MAX_DESCRIPTION_LENGTH} characters).`
+    );
+  }
+
   const rawCards = record.cards;
   if (!Array.isArray(rawCards) || rawCards.length === 0) {
     throw new Error("Deck must include at least one card.");
+  }
+
+  // Security: Validate total number of cards to prevent DoS
+  if (rawCards.length > MAX_CARDS_PER_DECK) {
+    throw new Error(
+      `Deck contains too many cards (${rawCards.length}). Maximum allowed is ${MAX_CARDS_PER_DECK}.`
+    );
   }
 
   const cards: CardPayload[] = rawCards.map((item, index) => {
@@ -83,9 +94,24 @@ function parseDeckImport(content: string): { title: string; description?: string
     if (typeof prompt !== "string" || prompt.trim().length === 0) {
       throw new Error(`Card #${index + 1} is missing a prompt.`);
     }
+
+    // Security: Validate prompt length
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      throw new Error(
+        `Card #${index + 1} prompt is too long (max ${MAX_PROMPT_LENGTH} characters).`
+      );
+    }
+
     const answer = entry.answer;
     if (typeof answer !== "string" || answer.trim().length === 0) {
       throw new Error(`Card #${index + 1} is missing an answer.`);
+    }
+
+    // Security: Validate answer length
+    if (answer.length > MAX_ANSWER_LENGTH) {
+      throw new Error(
+        `Card #${index + 1} answer is too long (max ${MAX_ANSWER_LENGTH} characters).`
+      );
     }
     const keypointsValue = entry.keypoints;
     let keypointItems: string[] = [];
@@ -104,6 +130,15 @@ function parseDeckImport(content: string): { title: string; description?: string
     }
     if (keypointItems.length > 6) {
       throw new Error(`Card #${index + 1} has more than 6 keypoints.`);
+    }
+
+    // Security: Validate keypoint lengths
+    for (let i = 0; i < keypointItems.length; i++) {
+      if (keypointItems[i].length > MAX_KEYPOINT_LENGTH) {
+        throw new Error(
+          `Card #${index + 1} keypoint #${i + 1} is too long (max ${MAX_KEYPOINT_LENGTH} characters).`
+        );
+      }
     }
 
     // Parse schedule and alternative answers if present
@@ -186,10 +221,10 @@ function App() {
   useEffect(() => {
     void checkHealth();
 
-    // Poll backend health every 30 seconds
+    // Poll backend health periodically
     const interval = setInterval(() => {
       void checkHealth();
-    }, 30000);
+    }, HEALTH_CHECK_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [checkHealth]);
@@ -272,7 +307,7 @@ function App() {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       <ToastContainer toasts={toasts} onClose={closeToast} />
       {showResetModal && (
         <DeleteConfirmModal
@@ -347,7 +382,7 @@ function App() {
             {/* Version Number */}
             <div className="text-center pt-2">
               <p className="text-xs text-text-muted m-0">
-                Version <span className="font-mono font-semibold">0.1.0</span>
+                Version <span className="font-mono font-semibold">{APP_VERSION}</span>
               </p>
             </div>
           </div>
@@ -356,7 +391,7 @@ function App() {
           <DeckDetails />
         </main>
       </div>
-    </>
+    </ErrorBoundary>
   );
 }
 

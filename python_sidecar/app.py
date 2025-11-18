@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import List
+import time
+from collections import defaultdict
+from typing import Dict, List, Tuple
 
-from fastapi import FastAPI, HTTPException, Query, Response, status
+from fastapi import FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Database
@@ -12,15 +14,55 @@ from .scoring import get_model_cache_status, score_answer, warm_model_cache
 
 app = FastAPI(title="Retention Backend", version="0.1.0")
 
-# Configure CORS
+# Configure CORS - Security: Restrict to only necessary methods and headers
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:1420,http://127.0.0.1:1420,https://tauri.localhost").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Only allow necessary HTTP methods
+    allow_headers=["Content-Type", "Authorization", "Accept"],  # Only allow necessary headers
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
+
+# Simple in-memory rate limiter
+# Format: {endpoint: {client_ip: (request_count, window_start_time)}}
+_rate_limit_store: Dict[str, Dict[str, Tuple[int, float]]] = defaultdict(lambda: defaultdict(lambda: (0, 0.0)))
+_RATE_LIMIT_WINDOW = 60  # 60 seconds window
+_RATE_LIMIT_MAX_REQUESTS = {
+    "/score": 30,  # 30 requests per minute for scoring
+    "/rate": 60,   # 60 requests per minute for self-rating
+    "/decks": 60,  # 60 requests per minute for deck operations
+}
+
+
+def check_rate_limit(endpoint: str, client_ip: str) -> None:
+    """
+    Simple rate limiting check. Raises HTTPException if limit exceeded.
+    """
+    if endpoint not in _RATE_LIMIT_MAX_REQUESTS:
+        return  # No rate limit for this endpoint
+
+    max_requests = _RATE_LIMIT_MAX_REQUESTS[endpoint]
+    current_time = time.time()
+
+    request_count, window_start = _rate_limit_store[endpoint][client_ip]
+
+    # Reset window if expired
+    if current_time - window_start > _RATE_LIMIT_WINDOW:
+        _rate_limit_store[endpoint][client_ip] = (1, current_time)
+        return
+
+    # Check if limit exceeded
+    if request_count >= max_requests:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded. Maximum {max_requests} requests per {_RATE_LIMIT_WINDOW} seconds."
+        )
+
+    # Increment counter
+    _rate_limit_store[endpoint][client_ip] = (request_count + 1, window_start)
+
 
 _database = Database()
 
@@ -70,14 +112,22 @@ async def health() -> HealthStatus:
 
 
 @app.post("/score", response_model=AttemptRecord)
-async def score(payload: ScoreRequest) -> AttemptRecord:
+async def score(payload: ScoreRequest, request: Request) -> AttemptRecord:
+    # Rate limiting for resource-intensive scoring endpoint
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit("/score", client_ip)
+
     result = await score_answer(payload)
     return await _database.record_attempt(payload, result)
 
 
 @app.post("/rate")
-async def rate(payload: RateRequest) -> dict:
+async def rate(payload: RateRequest, request: Request) -> dict:
     """Self-rating endpoint for Quick Mode. Updates schedule based on quality rating."""
+    # Rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit("/rate", client_ip)
+
     schedule = await _database.record_self_rating(payload.card_id, payload.quality)
     return {
         "cardId": payload.card_id,
@@ -86,7 +136,11 @@ async def rate(payload: RateRequest) -> dict:
 
 
 @app.get("/decks", response_model=List[DeckRecord])
-async def list_decks() -> List[DeckRecord]:
+async def list_decks(request: Request) -> List[DeckRecord]:
+    # Rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    check_rate_limit("/decks", client_ip)
+
     return await _database.list_decks()
 
 
