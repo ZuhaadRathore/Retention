@@ -652,12 +652,19 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     submitCurrentAnswer
   ]);
 
+  // Performance: Use ref pattern to avoid excessive event listener add/remove cycles
+  const handleKeydownRef = useRef(handleKeydown);
   useEffect(() => {
-    window.addEventListener("keydown", handleKeydown);
-    return () => {
-      window.removeEventListener("keydown", handleKeydown);
-    };
+    handleKeydownRef.current = handleKeydown;
   }, [handleKeydown]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => handleKeydownRef.current(e);
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
+  }, []); // Empty deps - listener is stable, but calls latest handleKeydown via ref
 
   // Reset flip state and hints when card changes
   useEffect(() => {

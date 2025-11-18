@@ -5,11 +5,13 @@ import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import { DeckDetails } from "./components/DeckDetails";
 import { DeckList } from "./components/DeckList";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useDeckStore } from "./store/deckStore";
 import { useStudyStore } from "./store/studyStore";
 import { useBackendStore } from "./store/backendStore";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { useToast, ToastContainer } from "./components/Toast";
+import { APP_VERSION } from "./version";
 import type { CardPayload, CardSchedule, Deck } from "./types/deck";
 
 // Helper functions for import/export (duplicated from DeckDetails for now)
@@ -333,7 +335,7 @@ function App() {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       <ToastContainer toasts={toasts} onClose={closeToast} />
       {showResetModal && (
         <DeleteConfirmModal
@@ -408,7 +410,7 @@ function App() {
             {/* Version Number */}
             <div className="text-center pt-2">
               <p className="text-xs text-text-muted m-0">
-                Version <span className="font-mono font-semibold">0.1.0</span>
+                Version <span className="font-mono font-semibold">{APP_VERSION}</span>
               </p>
             </div>
           </div>
@@ -417,7 +419,7 @@ function App() {
           <DeckDetails />
         </main>
       </div>
-    </>
+    </ErrorBoundary>
   );
 }
 
