@@ -1,4 +1,4 @@
-import type { CardSummary, CardSchedule } from "../types/deck";
+import type { CardSummary } from "../types/deck";
 import type { Verdict } from "../types/study";
 
 export type SessionPhase = "empty" | "prompt" | "review" | "complete";
@@ -238,75 +238,15 @@ export function sessionQueueReducer(
 }
 
 function sortCardsForSession(cards: CardSummary[]): CardSummary[] {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-
   return cards
     .map(cloneCard)
-    .filter((card) => !card.archived) // Filter out archived cards
-    .sort((a, b) => {
-      const aSchedule = a.schedule;
-      const bSchedule = b.schedule;
-
-      // Cards without schedule (new cards) go to the end
-      if (!aSchedule && !bSchedule) return 0;
-      if (!aSchedule) return 1;
-      if (!bSchedule) return -1;
-
-      const aDueDate = new Date(aSchedule.dueAt);
-      const bDueDate = new Date(bSchedule.dueAt);
-      const aDueDay = aSchedule.dueAt.split('T')[0];
-      const bDueDay = bSchedule.dueAt.split('T')[0];
-
-      // Check if cards are overdue
-      const aOverdue = aDueDate < now;
-      const bOverdue = bDueDate < now;
-
-      // Prioritize overdue cards
-      if (aOverdue && !bOverdue) return -1;
-      if (!aOverdue && bOverdue) return 1;
-
-      // If both overdue, prioritize by how long overdue (oldest first)
-      if (aOverdue && bOverdue) {
-        return aDueDate.getTime() - bDueDate.getTime();
-      }
-
-      // Check if cards are due today
-      const aDueToday = aDueDay === today;
-      const bDueToday = bDueDay === today;
-
-      // Prioritize cards due today
-      if (aDueToday && !bDueToday) return -1;
-      if (!aDueToday && bDueToday) return 1;
-
-      // If both due today or both due in future, prioritize by interval (shorter intervals first)
-      if (aDueToday && bDueToday) {
-        return aSchedule.interval - bSchedule.interval;
-      }
-
-      // For future cards, prioritize by due date (soonest first)
-      return aDueDate.getTime() - bDueDate.getTime();
-    });
+    .filter((card) => !card.archived); // Filter out archived cards
 }
 
 function cloneCard(card: CardSummary): CardSummary {
   return {
     ...card,
-    keypoints: card.keypoints ? [...card.keypoints] : undefined,
-    schedule: cloneSchedule(card.schedule)
-  };
-}
-
-function cloneSchedule(schedule?: CardSchedule | null): CardSchedule | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  return {
-    dueAt: schedule.dueAt,
-    interval: schedule.interval,
-    ease: schedule.ease,
-    streak: schedule.streak,
-    quality: schedule.quality ?? null
+    keypoints: card.keypoints ? [...card.keypoints] : undefined
   };
 }
 
@@ -314,7 +254,6 @@ function mergeCards(existing: CardSummary, incoming: CardSummary): CardSummary {
   return {
     ...existing,
     ...incoming,
-    keypoints: incoming.keypoints ?? existing.keypoints,
-    schedule: incoming.schedule ? cloneSchedule(incoming.schedule) : existing.schedule
+    keypoints: incoming.keypoints ?? existing.keypoints
   };
 }

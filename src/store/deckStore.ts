@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import { api } from "../services/api";
-import type { BulkCardOperation, CardSchedule, Deck, DeckPayload, DeckUpdatePayload } from "../types/deck";
+import type { BulkCardOperation, Deck, DeckPayload, DeckUpdatePayload } from "../types/deck";
 
 type DeckStatus = "idle" | "loading" | "error";
 
@@ -20,26 +20,12 @@ type DeckState = {
 
 const MAX_DECKS_RETURNED = 200;
 
-function normalizeSchedule(schedule?: CardSchedule | null): CardSchedule | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  return {
-    dueAt: schedule.dueAt,
-    interval: schedule.interval,
-    ease: schedule.ease,
-    streak: schedule.streak,
-    quality: schedule.quality ?? null
-  };
-}
-
 function normalizeDeck(deck: Deck): Deck {
   return {
     ...deck,
     cards: deck.cards.map((card) => ({
       ...card,
-      keypointCount: card.keypointCount ?? card.keypoints?.length ?? 0,
-      schedule: normalizeSchedule(card.schedule)
+      keypointCount: card.keypointCount ?? card.keypoints?.length ?? 0
     })),
     cardCount: deck.cardCount ?? deck.cards.length
   };

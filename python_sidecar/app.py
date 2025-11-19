@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Database
-from .models import AttemptRecord, BulkCardOperation, DeckIn, DeckRecord, DeckUpdate, HealthStatus, RateRequest, ScoreRequest
+from .models import AttemptRecord, BulkCardOperation, DeckIn, DeckRecord, DeckUpdate, HealthStatus, ScoreRequest
 from .scoring import get_model_cache_status, score_answer, warm_model_cache
 
 app = FastAPI(title="Retention Backend", version="0.1.0")
@@ -31,7 +31,6 @@ _rate_limit_store: Dict[str, Dict[str, Tuple[int, float]]] = defaultdict(lambda:
 _RATE_LIMIT_WINDOW = 60  # 60 seconds window
 _RATE_LIMIT_MAX_REQUESTS = {
     "/score": 30,  # 30 requests per minute for scoring
-    "/rate": 60,   # 60 requests per minute for self-rating
     "/decks": 60,  # 60 requests per minute for deck operations
 }
 
@@ -119,20 +118,6 @@ async def score(payload: ScoreRequest, request: Request) -> AttemptRecord:
 
     result = await score_answer(payload)
     return await _database.record_attempt(payload, result)
-
-
-@app.post("/rate")
-async def rate(payload: RateRequest, request: Request) -> dict:
-    """Self-rating endpoint for Quick Mode. Updates schedule based on quality rating."""
-    # Rate limiting
-    client_ip = request.client.host if request.client else "unknown"
-    check_rate_limit("/rate", client_ip)
-
-    schedule = await _database.record_self_rating(payload.card_id, payload.quality)
-    return {
-        "cardId": payload.card_id,
-        "schedule": schedule.model_dump(by_alias=True)
-    }
 
 
 @app.get("/decks", response_model=List[DeckRecord])

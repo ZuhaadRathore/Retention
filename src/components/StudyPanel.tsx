@@ -12,6 +12,7 @@ import { AlternativeAnswersInfo } from "./AlternativeAnswersInfo";
 import { ConfirmModal } from "./ConfirmModal";
 import { useAutoResizeTextarea } from "../hooks/useAutoResizeTextarea";
 import { usePlainTextPaste } from "../hooks/usePlainTextPaste";
+import { RefreshIcon, WarningIcon, StarIcon, MuscleIcon, BooksIcon, TargetIcon, ClipboardIcon, KeyboardIcon, LightBulbIcon } from "./icons";
 
 interface StudyPanelProps {
   card: CardSummary | null;
@@ -186,7 +187,7 @@ function SessionRestorationBanner({
   return (
     <div className="p-2 px-3 rounded-lg mb-3 bg-primary/10 border border-primary/30 flex items-center justify-between gap-3 text-sm">
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <span className="text-primary font-semibold flex-shrink-0">↻</span>
+        <RefreshIcon size={16} className="text-primary flex-shrink-0" />
         <p className="m-0 text-text-color truncate">
           Session restored: {progress.completed}/{progress.total} cards reviewed from {formatSessionAge(sessionStartedAt)}
         </p>
@@ -252,7 +253,7 @@ function SessionTimeoutWarning({ sessionStartedAt }: SessionTimeoutWarningProps)
 
   return (
     <div className="p-2 px-3 rounded-lg mb-3 bg-warning-amber/20 text-text-color border border-warning-amber/40 flex items-center gap-2 text-sm">
-      <span className="text-warning-amber font-semibold flex-shrink-0">⚠</span>
+      <WarningIcon size={16} className="text-warning-amber flex-shrink-0" />
       <span className="flex-1">
         Session expiring soon! This session will reset in about {hoursRemaining} hour{hoursRemaining !== 1 ? 's' : ''}.
         Complete your cards or your progress will be lost.
@@ -361,13 +362,13 @@ function SessionSummary({ deckTitle, session, sessionStartedAt, onRestart, onRet
   // Motivational message based on performance
   const getMotivationalMessage = () => {
     if (accuracyPercent >= 90) {
-      return "Outstanding work! You've mastered this material! 🌟";
+      return { text: "Outstanding work! You've mastered this material!", Icon: StarIcon };
     } else if (accuracyPercent >= 75) {
-      return "Great job! You're making excellent progress! 💪";
+      return { text: "Great job! You're making excellent progress!", Icon: MuscleIcon };
     } else if (accuracyPercent >= 50) {
-      return "Good effort! Keep practicing to improve! 📚";
+      return { text: "Good effort! Keep practicing to improve!", Icon: BooksIcon };
     } else {
-      return "Keep going! Practice makes perfect! 🎯";
+      return { text: "Keep going! Practice makes perfect!", Icon: TargetIcon };
     }
   };
 
@@ -380,7 +381,17 @@ function SessionSummary({ deckTitle, session, sessionStartedAt, onRestart, onRet
 
       {/* Motivational message */}
       <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/30 mb-6 mt-4">
-        <p className="text-base font-semibold text-primary m-0">{getMotivationalMessage()}</p>
+        <div className="flex items-center gap-2">
+          {(() => {
+            const { text, Icon } = getMotivationalMessage();
+            return (
+              <>
+                <Icon size={20} className="text-primary flex-shrink-0" />
+                <p className="text-base font-semibold text-primary m-0">{text}</p>
+              </>
+            );
+          })()}
+        </div>
       </div>
 
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(150px,1fr))] mt-6">
@@ -405,7 +416,10 @@ function SessionSummary({ deckTitle, session, sessionStartedAt, onRestart, onRet
       {/* Recommendations */}
       {cardsNeedingReview.length > 0 && (
         <div className="mt-6 p-5 rounded-xl bg-warning-amber/10 border-2 border-warning-amber/30">
-          <p className="text-base font-bold text-text-color m-0 mb-3">📋 Recommended Review</p>
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardIcon size={20} className="text-text-color flex-shrink-0" />
+            <p className="text-base font-bold text-text-color m-0">Recommended Review</p>
+          </div>
           <p className="text-sm text-text-muted mb-3">Focus on these cards in your next session:</p>
           <ul className="m-0 pl-5 text-text-color text-sm space-y-2">
             {cardsNeedingReview.map((card) => (
@@ -578,6 +592,37 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     event.preventDefault();
     void submitCurrentAnswer();
   };
+
+  // Navigation handlers that save draft before navigating
+  const handleNavigateBack = useCallback(() => {
+    if (busy) return;
+
+    // Save current answer as draft if not empty
+    if (card?.id && answer.trim()) {
+      setDraftAnswers(prev => ({
+        ...prev,
+        [card.id]: answer
+      }));
+    }
+
+    // Navigate with verdict if available, undefined otherwise
+    dispatchSession({ type: "backOfPile", verdict: verdictForCard?.verdict });
+  }, [busy, card, answer, verdictForCard, dispatchSession]);
+
+  const handleNavigateNext = useCallback(() => {
+    if (busy) return;
+
+    // Save current answer as draft if not empty
+    if (card?.id && answer.trim()) {
+      setDraftAnswers(prev => ({
+        ...prev,
+        [card.id]: answer
+      }));
+    }
+
+    // Navigate with verdict if available, undefined otherwise
+    dispatchSession({ type: "next", verdict: verdictForCard?.verdict });
+  }, [busy, card, answer, verdictForCard, dispatchSession]);
 
   const handleKeydown = useCallback((event: KeyboardEvent) => {
     if (event.defaultPrevented) {
@@ -780,7 +825,6 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
       prompt: c.prompt,
       answer: c.answer ?? "",
       keypoints: c.keypoints ?? [],
-      schedule: c.schedule ?? null,
       archived: c.archived,
       gradingMode: c.gradingMode,
       alternativeAnswers: c.id === card.id ? updatedAlternatives : c.alternativeAnswers
@@ -802,37 +846,6 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
     setIsFlipped(false);
     setAnswer('');
   };
-
-  // Navigation handlers that save draft before navigating
-  const handleNavigateBack = useCallback(() => {
-    if (busy) return;
-
-    // Save current answer as draft if not empty
-    if (card?.id && answer.trim()) {
-      setDraftAnswers(prev => ({
-        ...prev,
-        [card.id]: answer
-      }));
-    }
-
-    // Navigate with verdict if available, undefined otherwise
-    dispatchSession({ type: "backOfPile", verdict: verdictForCard?.verdict });
-  }, [busy, card, answer, verdictForCard, dispatchSession]);
-
-  const handleNavigateNext = useCallback(() => {
-    if (busy) return;
-
-    // Save current answer as draft if not empty
-    if (card?.id && answer.trim()) {
-      setDraftAnswers(prev => ({
-        ...prev,
-        [card.id]: answer
-      }));
-    }
-
-    // Navigate with verdict if available, undefined otherwise
-    dispatchSession({ type: "next", verdict: verdictForCard?.verdict });
-  }, [busy, card, answer, verdictForCard, dispatchSession]);
 
   const handleReportIssue = useCallback(() => {
     if (!card || !verdictForCard) return;
@@ -942,7 +955,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
           title="View keyboard shortcuts"
           aria-label="View keyboard shortcuts and help information"
         >
-          <span className="text-sm" aria-hidden="true">⌨</span>
+          <KeyboardIcon size={16} />
           <span>Press ? for shortcuts</span>
         </button>
       </div>
@@ -1019,15 +1032,19 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                         {!showHints ? (
                           <button
                             type="button"
-                            className="px-4 py-2 rounded-lg border-2 border-border-color bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color text-sm hand-drawn-btn"
+                            className="px-4 py-2 rounded-lg border-2 border-border-color bg-card-background text-text-muted hover:bg-paper-line hover:text-text-color text-sm hand-drawn-btn flex items-center gap-2"
                             onClick={() => setShowHints(true)}
                           >
-                            💡 Show Hints ({card.keypoints.length} keypoints)
+                            <LightBulbIcon size={16} />
+                            <span>Show Hints ({card.keypoints.length} keypoints)</span>
                           </button>
                         ) : (
                           <div className="p-4 rounded-xl bg-primary/10 border-2 border-primary/40 hand-drawn">
                             <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-bold text-primary m-0">💡 Hints (Key Concepts to Include)</p>
+                              <div className="flex items-center gap-2">
+                                <LightBulbIcon size={16} className="text-primary" />
+                                <p className="text-sm font-bold text-primary m-0">Hints (Key Concepts to Include)</p>
+                              </div>
                               <button
                                 type="button"
                                 className="text-xs text-text-muted hover:text-text-color underline"
@@ -1104,7 +1121,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                       {missingKeypoints.length > 0 && (
                         <div className="mb-4 p-4 rounded-xl bg-warning-amber/30 border-2 border-warning-amber shadow-md">
                           <div className="flex items-start gap-2 mb-2">
-                            <span className="text-xl flex-shrink-0">⚠</span>
+                            <WarningIcon size={20} className="text-warning-amber flex-shrink-0" />
                             <p className="text-base font-bold text-text-color m-0">
                               Missing Key Concepts ({missingKeypoints.length})
                             </p>
@@ -1186,7 +1203,7 @@ export function StudyPanel({ card, deckTitle, mode = "view", onReturnHome }: Stu
                             onClick={() => setShowReportIssue(true)}
                             className="text-xs text-text-muted hover:text-text-color underline transition-colors flex items-center gap-1"
                           >
-                            <span>⚠</span>
+                            <WarningIcon size={14} />
                             <span>Disagree with this verdict? Report an issue</span>
                           </button>
                         ) : (

@@ -14,21 +14,12 @@ export interface ApiHealth {
   modelCacheMessage?: string | null;
 }
 
-export interface CardSchedule {
-  dueAt: string;
-  interval: number;
-  ease: number;
-  streak: number;
-  quality?: number | null;
-}
-
 export interface DeckCardSummary {
   id: string;
   prompt: string;
   keypointCount: number;
   answer?: string | null;
   keypoints?: string[] | null;
-  schedule?: CardSchedule | null;
   archived?: boolean | null;
   gradingMode?: GradingMode | null;
 }
@@ -47,7 +38,6 @@ export interface DeckCardInput {
   prompt: string;
   answer: string;
   keypoints?: string[];
-  schedule?: CardSchedule | null;
   archived?: boolean | null;
   gradingMode?: GradingMode | null;
 }
@@ -65,7 +55,7 @@ export interface DeckUpdatePayload {
   cards?: DeckCardInput[] | null;
 }
 
-export type BulkOperationType = "mark-learned" | "reset-schedule" | "archive" | "unarchive";
+export type BulkOperationType = "mark-learned" | "archive" | "unarchive";
 
 export interface BulkCardOperation {
   cardIds: string[];
@@ -79,16 +69,6 @@ export interface ScoreRequest {
   keypoints?: string[];
   userAnswer: string;
   alternativeAnswers?: string[];
-}
-
-export interface RateRequest {
-  cardId: string;
-  quality: number; // 1-5 SM-2 quality rating
-}
-
-export interface RateResponse {
-  cardId: string;
-  schedule: CardSchedule;
 }
 
 export interface AttemptRecord {
@@ -105,7 +85,6 @@ export interface AttemptRecord {
   expectedAnswer?: string | null;
   keypoints?: string[];
   createdAt: string;
-  schedule?: CardSchedule | null;
 }
 
 /**

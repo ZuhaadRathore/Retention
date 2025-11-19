@@ -47,7 +47,6 @@ export function createDeckExportPayload(deck: Deck): string {
           prompt: card.prompt,
           answer: card.answer ?? "",
           keypoints: card.keypoints ?? [],
-          schedule: card.schedule ?? null,
           alternativeAnswers: card.alternativeAnswers ?? []
         }))
       }

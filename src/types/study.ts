@@ -1,5 +1,3 @@
-import type { CardSchedule } from "./deck";
-
 export type Verdict = "incorrect" | "missing" | "almost" | "correct";
 
 export interface ScoreRequestPayload {
@@ -25,5 +23,4 @@ export interface AttemptRecord {
   expectedAnswer?: string | null;
   keypoints: string[];
   createdAt: string;
-  schedule?: CardSchedule;
 }

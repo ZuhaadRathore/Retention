@@ -9,18 +9,6 @@ function requestDeckCreation() {
   window.dispatchEvent(new Event("retention:create-deck"));
 }
 
-function calculateDeckProgress(deck: { cards: Array<{ schedule?: { dueAt: string } | null }> }) {
-  const now = new Date();
-  const dueCards = deck.cards.filter((card) => {
-    if (!card.schedule?.dueAt) return false;
-    return new Date(card.schedule.dueAt) <= now;
-  }).length;
-
-  const studiedCards = deck.cards.filter((card) => card.schedule !== null && card.schedule !== undefined).length;
-
-  return { dueCards, studiedCards };
-}
-
 export function DeckList() {
   const { decks, selectedDeckId, selectDeck, status, error } = useDeckStore((state) => ({
     decks: state.decks,
@@ -131,7 +119,6 @@ export function DeckList() {
       <div className="flex flex-col gap-3">
         {filteredDecks.map((deck) => {
           const isActive = deck.id === selectedDeckId;
-          const progress = calculateDeckProgress(deck);
 
           return (
             <button
@@ -147,10 +134,6 @@ export function DeckList() {
               <p className="text-base font-bold m-0 text-text-color">{deck.title}</p>
               <p className="text-xs text-text-muted mt-1.5">
                 {deck.cardCount} cards
-                {progress.studiedCards > 0 && ` · ${progress.studiedCards} studied`}
-                {progress.dueCards > 0 && (
-                  <span className="text-primary font-semibold"> · {progress.dueCards} due</span>
-                )}
               </p>
               <p className="text-xs text-text-muted mt-0.5">
                 {formatRelativeTime(deck.updatedAt)}

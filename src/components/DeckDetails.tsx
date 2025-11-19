@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { open, save } from "@tauri-apps/api/dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 import { DeckEditor } from "./DeckEditor";
 import { StudyPanel } from "./StudyPanel";
@@ -11,7 +11,7 @@ import { useToast, ToastContainer } from "./Toast";
 import { useDeckStore } from "../store/deckStore";
 import { useStudyStore } from "../store/studyStore";
 import { normalizeFilename, createDeckExportPayload } from "../utils/deckImportExport";
-import type { CardPayload, CardSchedule, Deck } from "../types/deck";
+import type { CardPayload, Deck } from "../types/deck";
 
 type EditorPayload = {
   title: string;
@@ -83,37 +83,6 @@ function parseDeckImport(content: string): EditorPayload {
       throw new Error(`Card #${index + 1} has more than 6 keypoints.`);
     }
 
-    // Parse schedule data if present
-    let schedule: CardSchedule | null = null;
-    const scheduleValue = entry.schedule;
-    if (scheduleValue !== null && typeof scheduleValue === "object") {
-      const scheduleRecord = scheduleValue as Record<string, unknown>;
-      const dueAt = scheduleRecord.dueAt;
-      const interval = scheduleRecord.interval;
-      const ease = scheduleRecord.ease;
-      const streak = scheduleRecord.streak;
-
-      if (
-        typeof dueAt === "string" &&
-        typeof interval === "number" &&
-        typeof ease === "number" &&
-        typeof streak === "number"
-      ) {
-        schedule = {
-          dueAt,
-          interval,
-          ease,
-          streak,
-          quality:
-            scheduleRecord.quality === null || scheduleRecord.quality === undefined
-              ? null
-              : typeof scheduleRecord.quality === "number"
-              ? scheduleRecord.quality
-              : null
-        };
-      }
-    }
-
     // Parse alternative answers if present
     let alternativeAnswers: string[] = [];
     const alternativeAnswersValue = entry.alternativeAnswers;
@@ -128,7 +97,6 @@ function parseDeckImport(content: string): EditorPayload {
       prompt: prompt.trim(),
       answer: answer.trim(),
       keypoints: keypointItems,
-      schedule: schedule,
       alternativeAnswers: alternativeAnswers.length > 0 ? alternativeAnswers : undefined
     };
   });
@@ -383,8 +351,8 @@ export function DeckDetails() {
             onSubmit={handleCreateSubmit}
             onCancel={() => setMode("view")}
           />
-          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
-          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
+          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color text-sm hand-drawn">{statusMessage}</p>}
+          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color text-sm hand-drawn">{errorMessage}</p>}
         </div>
       </>
     );
@@ -402,8 +370,8 @@ export function DeckDetails() {
             onSubmit={handleEditSubmit}
             onCancel={() => setMode("view")}
           />
-          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color dark:text-accent-tan text-sm hand-drawn">{statusMessage}</p>}
-          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
+          {statusMessage && <p className="mt-4 p-4 rounded-xl bg-accent-tan/30 border-2 border-border-color text-text-color text-sm hand-drawn">{statusMessage}</p>}
+          {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color text-sm hand-drawn">{errorMessage}</p>}
         </div>
       </>
     );
@@ -429,8 +397,8 @@ export function DeckDetails() {
   if (status === "error" && !deck) {
     return (
       <div className="p-8 flashcard paper-texture min-h-[20rem]">
-        <h2 className="text-2xl font-bold m-0 mb-3 text-text-color dark:text-white font-display">Unable to load decks</h2>
-        <p className="text-base text-text-muted dark:text-text-muted mb-6">
+        <h2 className="text-2xl font-bold m-0 mb-3 text-text-color font-display">Unable to load decks</h2>
+        <p className="text-base text-text-muted mb-6">
           {errorMessage ?? error ?? "Try checking the sidecar status."}
         </p>
         <div className="flex gap-3 flex-wrap">
@@ -451,18 +419,24 @@ export function DeckDetails() {
             Import deck
           </button>
         </div>
-        {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color dark:text-accent-tan text-sm hand-drawn">{errorMessage}</p>}
+        {errorMessage && <p className="mt-4 p-4 rounded-xl bg-incorrect-red/20 border-2 border-incorrect-red text-text-color text-sm hand-drawn">{errorMessage}</p>}
       </div>
     );
   }
 
   if (!deck) {
+    // Distinguish between "no decks exist" vs "decks exist but none selected"
+    const noDecksExist = decks.length === 0;
+
     return (
       <div className="p-8 flashcard paper-texture min-h-[20rem]">
-        <h2 className="text-2xl font-bold m-0 mb-3 text-text-color dark:text-white font-display">Select a deck</h2>
-        <p className="text-base text-text-muted dark:text-text-muted mb-6">
-          Choose a deck from the left panel to review its cards and study metadata, or create a new
-          deck to get started.
+        <h2 className="text-2xl font-bold m-0 mb-3 text-text-color font-display">
+          {noDecksExist ? "No decks yet" : "Select a deck"}
+        </h2>
+        <p className="text-base text-text-muted mb-6">
+          {noDecksExist
+            ? "Create your first deck to get started with spaced repetition learning."
+            : "Choose a deck from the left panel to review its cards and study metadata."}
         </p>
         <div className="flex gap-3 flex-wrap">
           <button

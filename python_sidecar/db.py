@@ -18,11 +18,11 @@ from .models import (
     DeckIn,
     DeckRecord,
     DeckUpdate,
-    ScheduleSnapshot,
     ScoreRequest,
     ScoreResult,
     Verdict
 )
+from .migrations import MigrationManager
 
 
 def _default_data_dir() -> Path:
@@ -77,29 +77,7 @@ CREATE TABLE IF NOT EXISTS attempts (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     payload TEXT
 );
-
-CREATE TABLE IF NOT EXISTS schedules (
-    card_id TEXT PRIMARY KEY REFERENCES cards(id) ON DELETE CASCADE,
-    ease REAL NOT NULL DEFAULT 2.5,
-    interval INTEGER NOT NULL DEFAULT 1,
-    due_at TEXT NOT NULL DEFAULT (datetime('now')),
-    streak INTEGER NOT NULL DEFAULT 0
-);
 """
-
-DEFAULT_EASE = 2.5
-MIN_EASE = 1.3
-INITIAL_INTERVAL = 1
-SECOND_INTERVAL = 6
-
-VERDICT_TO_QUALITY = {
-    Verdict.correct: 5,
-    Verdict.almost: 4,
-    Verdict.missing: 2,
-    Verdict.incorrect: 1
-}
-
-MIN_SUCCESS_QUALITY = 3
 
 # Security limits for bulk operations
 MAX_BULK_CARDS = 500  # Conservative limit below SQLite's default 999 parameter limit
@@ -154,8 +132,17 @@ class Database:
                 self._connection = await aiosqlite.connect(DB_PATH)
                 self._connection.row_factory = aiosqlite.Row
                 await self._connection.executescript(SCHEMA)
+
+                # Run legacy column migrations for backward compatibility
                 await self._migrate_archived_column()
                 await self._migrate_alternative_answers_column()
+
+                # Run migration system
+                migration_manager = MigrationManager(DB_PATH)
+                applied_migrations = await migration_manager.run_migrations(self._connection)
+                if applied_migrations:
+                    print(f"Applied migrations: {', '.join(applied_migrations)}", flush=True)
+
                 await self._connection.commit()
                 await self._seed_if_empty()
             except Exception:
@@ -283,8 +270,6 @@ class Database:
         conn = self._require_connection()
         attempt_id = str(uuid4())
         timestamp = _utc_now()
-        schedule = await self._update_schedule(conn, request.card_id, result.verdict, timestamp)
-        schedule_snapshot = ScheduleSnapshot(**schedule)
         payload = {
             "prompt": request.prompt,
             "expected_answer": request.expected_answer,
@@ -293,8 +278,7 @@ class Database:
             "feedback": result.feedback,
             "cosine": result.cosine,
             "coverage": result.coverage,
-            "verdict": result.verdict.value,
-            "schedule": schedule
+            "verdict": result.verdict.value
         }
         await conn.execute(
             """
@@ -325,29 +309,8 @@ class Database:
             prompt=request.prompt,
             expected_answer=request.expected_answer,
             keypoints=request.keypoints,
-            created_at=timestamp,
-            schedule=schedule_snapshot
+            created_at=timestamp
         )
-
-    async def record_self_rating(self, card_id: str, quality: int) -> ScheduleSnapshot:
-        """Record a self-rating and update schedule. Returns updated schedule."""
-        conn = self._require_connection()
-        timestamp = _utc_now()
-
-        # Map quality to a verdict for consistency
-        if quality >= 5:
-            verdict = Verdict.correct
-        elif quality >= 4:
-            verdict = Verdict.almost
-        elif quality >= 3:
-            verdict = Verdict.missing
-        else:
-            verdict = Verdict.incorrect
-
-        schedule = await self._update_schedule(conn, card_id, verdict, timestamp)
-        await conn.commit()
-
-        return ScheduleSnapshot(**schedule)
 
     async def list_attempts(self, card_id: str, limit: int = 50) -> List[AttemptRecord]:
         conn = self._require_connection()
@@ -365,8 +328,6 @@ class Database:
         attempts: List[AttemptRecord] = []
         for row in rows:
             payload = json.loads(row["payload"] or "{}")
-            schedule_data = payload.get("schedule")
-            schedule = ScheduleSnapshot(**schedule_data) if schedule_data else None
             attempts.append(
                 AttemptRecord(
                     id=row["id"],
@@ -381,80 +342,17 @@ class Database:
                     prompt=payload.get("prompt"),
                     expected_answer=payload.get("expected_answer"),
                     keypoints=list(payload.get("keypoints", [])),
-                    created_at=row["created_at"],
-                    schedule=schedule
+                    created_at=row["created_at"]
                 )
             )
         return attempts
-
-    async def _update_schedule(
-        self,
-        conn: aiosqlite.Connection,
-        card_id: str,
-        verdict: Verdict,
-        timestamp: str
-    ) -> dict:
-        """Apply SM-2 style scheduling updates for a card and return the new schedule snapshot."""
-
-        cursor = await conn.execute(
-            "SELECT ease, interval, streak FROM schedules WHERE card_id = ?",
-            (card_id,)
-        )
-        row = await cursor.fetchone()
-        ease = float(row["ease"]) if row else DEFAULT_EASE
-        interval = int(row["interval"]) if row else INITIAL_INTERVAL
-        streak = int(row["streak"]) if row else 0
-
-        quality = VERDICT_TO_QUALITY.get(verdict, 2)
-        ease = max(
-            MIN_EASE,
-            ease + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-        )
-
-        if quality < MIN_SUCCESS_QUALITY:
-            streak = 0
-            interval = INITIAL_INTERVAL
-        else:
-            streak += 1
-            if streak == 1:
-                interval = INITIAL_INTERVAL
-            elif streak == 2:
-                interval = SECOND_INTERVAL
-            else:
-                interval = max(1, round(interval * ease))
-
-        base = datetime.fromisoformat(timestamp)
-        due_at = (base + timedelta(days=interval)).isoformat()
-
-        await conn.execute(
-            """
-            INSERT INTO schedules (card_id, ease, interval, due_at, streak)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(card_id) DO UPDATE SET
-                ease = excluded.ease,
-                interval = excluded.interval,
-                due_at = excluded.due_at,
-                streak = excluded.streak
-            """,
-            (card_id, ease, interval, due_at, streak)
-        )
-
-        return {
-            "ease": ease,
-            "interval": interval,
-            "due_at": due_at,
-            "streak": streak,
-            "quality": quality
-        }
 
     async def _fetch_cards(self, deck_id: str) -> List[CardRecord]:
         conn = self._require_connection()
         cursor = await conn.execute(
             """
-            SELECT c.id, c.prompt, c.answer, c.keypoints, c.archived, c.alternative_answers,
-                   s.due_at, s.interval, s.ease, s.streak
+            SELECT c.id, c.prompt, c.answer, c.keypoints, c.archived, c.alternative_answers
             FROM cards AS c
-            LEFT JOIN schedules AS s ON s.card_id = c.id
             WHERE c.deck_id = ?
             ORDER BY c.created_at
             """,
@@ -465,12 +363,6 @@ class Database:
         for row in rows:
             keypoints = json.loads(row["keypoints"]) if row["keypoints"] else []
             alternative_answers = json.loads(row["alternative_answers"]) if row["alternative_answers"] else []
-            schedule = ScheduleSnapshot(
-                due_at=row["due_at"] or _utc_now(),
-                interval=int(row["interval"] or INITIAL_INTERVAL),
-                ease=float(row["ease"] or DEFAULT_EASE),
-                streak=int(row["streak"] or 0)
-            )
             archived = bool(row["archived"]) if row["archived"] is not None else False
             cards.append(
                 CardRecord(
@@ -479,7 +371,6 @@ class Database:
                     answer=row["answer"],
                     keypoints=keypoints,
                     keypoint_count=len(keypoints),
-                    schedule=schedule,
                     archived=archived if archived else None,
                     alternative_answers=alternative_answers if alternative_answers else None
                 )
@@ -488,26 +379,6 @@ class Database:
 
     async def _replace_cards(self, deck_id: str, cards: List[CardIn], timestamp: str) -> None:
         conn = self._require_connection()
-        cursor = await conn.execute(
-            """
-            SELECT c.id, s.ease, s.interval, s.due_at, s.streak
-            FROM cards AS c
-            LEFT JOIN schedules AS s ON s.card_id = c.id
-            WHERE c.deck_id = ?
-            """,
-            (deck_id,)
-        )
-        existing_rows = await cursor.fetchall()
-        schedule_snapshot = {
-            row["id"]: {
-                "ease": float(row["ease"]) if row["ease"] is not None else DEFAULT_EASE,
-                "interval": int(row["interval"]) if row["interval"] is not None else INITIAL_INTERVAL,
-                "due_at": row["due_at"] or timestamp,
-                "streak": int(row["streak"]) if row["streak"] is not None else 0
-            }
-            for row in existing_rows
-        }
-
         await conn.execute("DELETE FROM cards WHERE deck_id = ?", (deck_id,))
         for card in cards:
             card_id = card.id or str(uuid4())
@@ -520,26 +391,6 @@ class Database:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (card_id, deck_id, card.prompt, card.answer, keypoints_json, archived, alternative_answers_json, timestamp, timestamp)
-            )
-            schedule = schedule_snapshot.get(card_id)
-            if schedule is None:
-                schedule = {
-                    "ease": DEFAULT_EASE,
-                    "interval": INITIAL_INTERVAL,
-                    "due_at": timestamp,
-                    "streak": 0
-                }
-            await conn.execute(
-                """
-                INSERT INTO schedules (card_id, ease, interval, due_at, streak)
-                VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(card_id) DO UPDATE SET
-                    ease = excluded.ease,
-                    interval = excluded.interval,
-                    due_at = excluded.due_at,
-                    streak = excluded.streak
-                """,
-                (card_id, schedule["ease"], schedule["interval"], schedule["due_at"], schedule["streak"])
             )
 
     async def _migrate_archived_column(self) -> None:
@@ -611,36 +462,12 @@ class Database:
                 (timestamp, *valid_cards)
             )
         elif operation == BulkOperationType.mark_learned:
-            # Mark as learned - set very long interval (180 days)
-            for card_id in valid_cards:
-                due_at = (datetime.fromisoformat(timestamp) + timedelta(days=180)).isoformat()
-                await conn.execute(
-                    """
-                    INSERT INTO schedules (card_id, ease, interval, due_at, streak)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(card_id) DO UPDATE SET
-                        ease = 2.5,
-                        interval = 180,
-                        due_at = excluded.due_at,
-                        streak = 10
-                    """,
-                    (card_id, 2.5, 180, due_at, 10)
-                )
-        elif operation == BulkOperationType.reset_schedule:
-            # Reset schedule to initial state
-            for card_id in valid_cards:
-                await conn.execute(
-                    """
-                    INSERT INTO schedules (card_id, ease, interval, due_at, streak)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(card_id) DO UPDATE SET
-                        ease = 2.5,
-                        interval = 1,
-                        due_at = ?,
-                        streak = 0
-                    """,
-                    (card_id, DEFAULT_EASE, INITIAL_INTERVAL, timestamp, 0, timestamp)
-                )
+            # Mark as learned - archive the cards
+            placeholders = ",".join("?" * len(valid_cards))
+            await conn.execute(
+                f"UPDATE cards SET archived = 1, updated_at = ? WHERE id IN ({placeholders})",
+                (timestamp, *valid_cards)
+            )
 
         # Update deck timestamp
         await conn.execute(

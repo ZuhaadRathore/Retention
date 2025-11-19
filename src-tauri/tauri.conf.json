@@ -1,59 +1,39 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Retention",
+  "version": "0.1.0",
+  "identifier": "com.retention.app",
   "build": {
     "beforeDevCommand": "pnpm web:dev",
-    "beforeBuildCommand": "pnpm web:build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm web:build && python build-sidecar.py",
+    "frontendDist": "../dist"
   },
-  "package": {
-    "productName": "Retention",
-    "version": "0.1.0"
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "retention-sidecar": "../python_sidecar/dist/retention-sidecar/"
+    },
+    "externalBin": [
+      "binaries/retention-sidecar"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    }
   },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "sidecar": false,
-        "open": true
-      },
-      "http": {
-        "request": true,
-        "scope": [
-          "http://localhost:27888/*",
-          "http://127.0.0.1:27888/*"
-        ]
-      }
-    },
-    "bundle": {
-      "active": true,
-      "identifier": "com.retention.app",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "",
-        "wix": {
-          "language": "en-US"
-        }
-      },
-      "macOS": {
-        "minimumSystemVersion": "10.13",
-        "entitlements": null,
-        "exceptionDomain": null
-      },
-      "deb": {
-        "depends": []
-      }
-    },
+  "app": {
     "windows": [
       {
         "label": "main",
@@ -65,13 +45,21 @@
     ],
     "security": {
       "csp": null,
-      "dangerousRemoteDomainIpcAccess": [
-        {
-          "domain": "localhost:1420",
-          "windows": ["main"],
-          "enableTauriAPI": true
-        }
-      ]
+      "devCsp": null
+    },
+    "withGlobalTauri": true
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/{{owner}}/{{repo}}/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlEREFDMUM2REYzNDkwNUIKUldSYmtEVGZ4c0hhbmZocFR4eXlTeE4yNk52T0VZZWIzK1JpWlpkdTROUXdXbm9CbG5mZUZiZHAK",
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

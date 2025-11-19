@@ -4,7 +4,6 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: "class",
   theme: {
     extend: {
       colors: {
@@ -12,7 +11,6 @@ export default {
         "primary": "#8B4513",              // Saddle brown for primary actions
         "primary-dark": "#654321",         // Darker brown for hover states
         "background-light": "#FFF8E7",     // Cream/cornsilk - like old paper
-        "background-dark": "#2C1810",      // Deep dark brown for dark mode
         "card-background": "#FFFEF9",      // Almost white with warm tint - like flashcard paper
         "card-shadow": "#D4A574",          // Light brown shadow for depth
         "text-color": "#3E2723",           // Dark chocolate brown text

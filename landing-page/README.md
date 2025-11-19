@@ -1,13 +1,13 @@
-# Flash AI Landing Page
+# Retention Landing Page
 
-A beautiful, paper-themed landing page for the Flash AI flashcard application.
+A beautiful, paper-themed landing page for the Retention flashcard application.
 
 ## Features
 
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - **Paper-Themed Styling**: Matches the main application's aesthetic with cream backgrounds, saddle brown accents, and hand-drawn elements
 - **Platform Downloads**: Download buttons for macOS, Windows, and Linux
-- **Feature Showcase**: Highlights key features of the Flash AI application
+- **Feature Showcase**: Highlights key features of the Retention application
 - **Smooth Animations**: Hand-drawn button effects and smooth scroll behavior
 - **Zero Dependencies**: Standalone HTML file using Tailwind CSS via CDN
 
@@ -90,7 +90,7 @@ Currently, the download buttons are styled but not linked to actual files. To ad
 
 ```html
 <!-- Example for macOS -->
-<a href="https://github.com/yourusername/flash-ai/releases/download/v1.0.0/flash-ai-macos.dmg"
+<a href="https://github.com/yourusername/retention/releases/download/v1.0.0/retention-macos.dmg"
    class="download-btn p-6 rounded-2xl text-center group cursor-pointer">
     <!-- button content -->
 </a>
@@ -118,7 +118,7 @@ To add application screenshots:
 ```html
 <section class="container mx-auto px-6 py-20">
     <div class="max-w-5xl mx-auto">
-        <img src="screenshot-1.png" alt="Flash AI Screenshot" class="flashcard p-4 rounded-3xl">
+        <img src="screenshot-1.png" alt="Retention Screenshot" class="flashcard p-4 rounded-3xl">
     </div>
 </section>
 ```
@@ -134,7 +134,7 @@ Update placeholder links in the footer and navigation:
 
 ## Design System
 
-The landing page replicates the Flash AI application's design system:
+The landing page replicates the Retention application's design system:
 
 - **Typography**: Inter (sans-serif) for body text, Gochi Hand for headings
 - **Components**: Hand-drawn buttons, flashcards, feature cards
@@ -150,4 +150,4 @@ The landing page replicates the Flash AI application's design system:
 
 ## License
 
-This landing page is part of the Flash AI project.
+This landing page is part of the Retention project.

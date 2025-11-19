@@ -19,7 +19,10 @@
       "Bash(pnpm add:*)",
       "Bash(cmd.exe /c \"if exist dist rmdir /s /q dist\")",
       "Bash(pnpm dev)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm check:*)",
+      "Bash(del \"src\\hooks\\useDarkMode.ts\")"
     ],
     "deny": [],
     "ask": []

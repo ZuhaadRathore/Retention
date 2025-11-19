@@ -35,8 +35,7 @@ function toAttemptRecord(apiRecord: ApiAttemptRecord): AttemptRecord {
     prompt: apiRecord.prompt,
     expectedAnswer: apiRecord.expectedAnswer,
     keypoints: apiRecord.keypoints ?? [],
-    createdAt: apiRecord.createdAt,
-    schedule: apiRecord.schedule
+    createdAt: apiRecord.createdAt
   };
 }
 

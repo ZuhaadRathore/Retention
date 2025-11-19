@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
-import { open, save } from "@tauri-apps/api/dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 import { DeckDetails } from "./components/DeckDetails";
 import { DeckList } from "./components/DeckList";
-import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { UpdateNotification } from "./components/UpdateNotification";
 import { useDeckStore } from "./store/deckStore";
-import { useStudyStore } from "./store/studyStore";
 import { useBackendStore } from "./store/backendStore";
-import { useDarkMode } from "./hooks/useDarkMode";
 import { useToast, ToastContainer } from "./components/Toast";
 import { APP_VERSION } from "./version";
 import { normalizeFilename, createDeckExportPayload } from "./utils/deckImportExport";
 import { HEALTH_CHECK_INTERVAL_MS } from "./constants/time";
+import { ImportIcon, ExportIcon } from "./components/icons";
+import { initializeApiConfig } from "./config/api";
 import type { CardPayload, CardSchedule, Deck } from "./types/deck";
 
 // Security: Validation constants for deck import
@@ -200,11 +200,8 @@ function parseDeckImport(content: string): { title: string; description?: string
 function App() {
   const initializeDecks = useDeckStore((state) => state.initialize);
   const checkHealth = useBackendStore((state) => state.checkHealth);
-  const resetSession = useStudyStore((state) => state.resetSession);
-  const { isDark, toggle } = useDarkMode();
   const { toasts, showToast, closeToast } = useToast();
   const [busy, setBusy] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
 
   const { decks, selectedDeckId, addDeck } = useDeckStore((state) => ({
     decks: state.decks,
@@ -215,6 +212,8 @@ function App() {
   const selectedDeck = decks.find((d) => d.id === selectedDeckId) ?? null;
 
   useEffect(() => {
+    // Initialize API config to get the sidecar port
+    void initializeApiConfig();
     void initializeDecks();
   }, [initializeDecks]);
 
@@ -287,36 +286,11 @@ function App() {
     }
   };
 
-  const handleResetAppData = () => {
-    // Clear study session
-    resetSession();
-
-    // Clear all localStorage
-    localStorage.clear();
-
-    // Show success message
-    showToast("All app data has been cleared. Refresh to reload.", "success");
-
-    // Close modal
-    setShowResetModal(false);
-
-    // Reload the page after a short delay
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
-  };
 
   return (
     <ErrorBoundary>
       <ToastContainer toasts={toasts} onClose={closeToast} />
-      {showResetModal && (
-        <DeleteConfirmModal
-          itemName="all app data"
-          itemType="data"
-          onConfirm={handleResetAppData}
-          onCancel={() => setShowResetModal(false)}
-        />
-      )}
+      <UpdateNotification onUpdateAvailable={(version) => showToast(`Update ${version} is available!`, "info")} />
       <div className="relative flex min-h-screen bg-background-light paper-texture">
         <aside className="w-72 bg-card-background/60 p-6 flex flex-col justify-between border-r-4 border-border-color shadow-lg">
           <div>
@@ -336,7 +310,7 @@ function App() {
                 onClick={handleImportDeck}
                 disabled={busy}
               >
-                <span>📥</span>
+                <ImportIcon size={20} />
                 <span>Import Deck</span>
               </button>
               <button
@@ -346,39 +320,14 @@ function App() {
                 disabled={busy || !selectedDeck}
                 title={!selectedDeck ? "Select a deck to export" : "Export selected deck"}
               >
-                <span>📤</span>
+                <ExportIcon size={20} />
                 <span>Export Deck</span>
               </button>
             </div>
           </div>
 
           {/* Settings Section */}
-          <div className="pt-4 border-t-2 border-border-color/30 space-y-3">
-            {/* Dark Mode Toggle */}
-            <button
-              type="button"
-              className="w-full px-4 py-3 rounded-xl border-2 border-border-color bg-card-background text-text-color font-semibold hand-drawn-btn hover:bg-paper-line flex items-center justify-between text-sm transition-colors"
-              onClick={toggle}
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-xl">{isDark ? "🌙" : "☀️"}</span>
-                <span>{isDark ? "Dark Mode" : "Light Mode"}</span>
-              </span>
-              <span className="text-xs text-text-muted">Toggle</span>
-            </button>
-
-            {/* Reset App Data */}
-            <button
-              type="button"
-              className="w-full px-4 py-3 rounded-xl border-2 border-incorrect-red/50 bg-card-background text-incorrect-red font-semibold hand-drawn-btn hover:bg-incorrect-red/10 flex items-center justify-center gap-2 text-sm transition-colors"
-              onClick={() => setShowResetModal(true)}
-              title="Clear all app data and reset to defaults"
-            >
-              <span className="text-xl">⚠️</span>
-              <span>Reset App Data</span>
-            </button>
-
+          <div className="pt-4 border-t-2 border-border-color/30">
             {/* Version Number */}
             <div className="text-center pt-2">
               <p className="text-xs text-text-muted m-0">

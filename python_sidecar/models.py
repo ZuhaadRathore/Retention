@@ -35,12 +35,6 @@ class ScoreRequest(CamelModel):
     alternative_answers: Optional[List[str]] = Field(default_factory=list)
 
 
-class RateRequest(CamelModel):
-    """Request for self-rating a card (Quick Mode)."""
-    card_id: str = Field(..., examples=["card-123"], max_length=MAX_ID_LENGTH)
-    quality: int = Field(..., ge=1, le=5, description="SM-2 quality rating (1-5)")
-
-
 class ScoreResult(BaseModel):
     verdict: Verdict
     score: float = Field(..., ge=0.0, le=1.0)
@@ -64,7 +58,6 @@ class AttemptRecord(CamelModel):
     expected_answer: Optional[str] = None
     keypoints: List[str] = Field(default_factory=list)
     created_at: str
-    schedule: Optional["ScheduleSnapshot"] = None
 
 
 class HealthStatus(BaseModel):
@@ -96,21 +89,12 @@ class DeckUpdate(CamelModel):
     cards: Optional[List[CardIn]] = Field(None, max_length=MAX_CARDS_PER_DECK)
 
 
-class ScheduleSnapshot(CamelModel):
-    due_at: str
-    interval: int
-    ease: float
-    streak: int
-    quality: Optional[int] = None
-
-
 class CardRecord(CamelModel):
     id: str
     prompt: str
     answer: Optional[str] = None
     keypoints: List[str] = Field(default_factory=list)
     keypoint_count: int
-    schedule: ScheduleSnapshot
     archived: Optional[bool] = None
     alternative_answers: Optional[List[str]] = Field(default_factory=list)
 
@@ -126,7 +110,6 @@ class DeckRecord(CamelModel):
 
 class BulkOperationType(str, Enum):
     mark_learned = "mark-learned"
-    reset_schedule = "reset-schedule"
     archive = "archive"
     unarchive = "unarchive"
 

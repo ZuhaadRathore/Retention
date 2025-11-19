@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WarningIcon } from "./icons";
 
 interface DeleteConfirmModalProps {
   itemName: string;
@@ -22,7 +23,7 @@ export function DeleteConfirmModal({ itemName, itemType, cardCount, onConfirm, o
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-6">
-          <span className="text-5xl">⚠️</span>
+          <WarningIcon size={48} className="text-incorrect-red" />
           <h2 className="text-3xl font-bold m-0 text-incorrect-red font-display">Delete {itemType === "deck" ? "Deck" : "Card"}?</h2>
         </div>
 
@@ -33,9 +34,12 @@ export function DeleteConfirmModal({ itemName, itemType, cardCount, onConfirm, o
 
           {itemType === "deck" && cardCount !== undefined && cardCount > 0 && (
             <div className="p-4 rounded-xl bg-warning-amber/20 border-2 border-warning-amber/40 mb-4">
-              <p className="text-sm text-text-color m-0">
-                ⚠ This deck contains <strong>{cardCount} card{cardCount !== 1 ? 's' : ''}</strong>. All cards and their study history will be lost.
-              </p>
+              <div className="flex items-start gap-2">
+                <WarningIcon size={16} className="text-warning-amber flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-text-color m-0">
+                  This deck contains <strong>{cardCount} card{cardCount !== 1 ? 's' : ''}</strong>. All cards and their study history will be lost.
+                </p>
+              </div>
             </div>
           )}
 

@@ -49,19 +49,6 @@ function deriveSessionState(
   };
 }
 
-function mapSchedule(schedule: AttemptRecord["schedule"]): CardSummary["schedule"] | undefined {
-  if (!schedule) {
-    return undefined;
-  }
-  return {
-    dueAt: schedule.dueAt,
-    interval: schedule.interval,
-    ease: schedule.ease,
-    streak: schedule.streak,
-    quality: schedule.quality ?? null
-  };
-}
-
 const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const useStudyStore = create<StudyState>()(
@@ -144,15 +131,7 @@ export const useStudyStore = create<StudyState>()(
       set((state) => {
         const existing = state.attemptsByCard[payload.cardId] ?? [];
         const nextAttempts = [attempt, ...existing].slice(0, MAX_CACHED_ATTEMPTS);
-        let session = state.session;
-        if (state.session.active?.id === payload.cardId) {
-          const updatedCard: CardSummary = {
-            ...state.session.active,
-            schedule: mapSchedule(attempt.schedule)
-          };
-          session = sessionQueueReducer(session, { type: "syncCard", card: updatedCard });
-        }
-        session = sessionQueueReducer(session, { type: "check" });
+        let session = sessionQueueReducer(state.session, { type: "check" });
         return {
           status: "idle" as StudyStatus,
           lastAttempt: attempt,

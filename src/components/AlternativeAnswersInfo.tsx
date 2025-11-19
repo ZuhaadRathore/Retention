@@ -1,3 +1,5 @@
+import { LightBulbIcon } from "./icons";
+
 interface AlternativeAnswersInfoProps {
   onClose: () => void;
 }
@@ -70,9 +72,12 @@ export function AlternativeAnswersInfo({ onClose }: AlternativeAnswersInfoProps)
             </div>
 
             <div className="p-4 rounded-xl bg-orange-50 border-2 border-orange-200">
-              <h4 className="text-lg font-semibold text-orange-800 mb-2">
-                💡 Pro Tip
-              </h4>
+              <div className="flex items-center gap-2 mb-2">
+                <LightBulbIcon size={20} className="text-orange-800 flex-shrink-0" />
+                <h4 className="text-lg font-semibold text-orange-800 m-0">
+                  Pro Tip
+                </h4>
+              </div>
               <p className="text-orange-700 text-sm leading-relaxed m-0">
                 Use alternative answers to customize your flashcards to match your learning style.
                 Over time, your deck becomes personalized to how you naturally express knowledge!

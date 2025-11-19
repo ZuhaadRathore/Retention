@@ -128,8 +128,8 @@ function validateCard(card: DeckDraftCard): { prompt?: string; answer?: string; 
   }
 
   const keypointLines = card.keypointsText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (keypointLines.length < 2) {
-    errors.keypoints = "At least 2 keypoints required";
+  if (keypointLines.length < 1) {
+    errors.keypoints = "At least 1 keypoint required";
   } else if (keypointLines.length > 6) {
     errors.keypoints = "Maximum 6 keypoints allowed";
   }
@@ -177,12 +177,12 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
       return;
     }
 
-    // Validate keypoints count (2-6 per card)
+    // Validate keypoints count (1-6 per card)
     for (let i = 0; i < preparedCards.length; i++) {
       const card = preparedCards[i];
       const keypointCount = card.keypoints.length;
-      if (keypointCount < 2) {
-        setError(`Card #${i + 1} must have at least 2 keypoints.`);
+      if (keypointCount < 1) {
+        setError(`Card #${i + 1} must have at least 1 keypoint.`);
         return;
       }
       if (keypointCount > 6) {
@@ -522,7 +522,7 @@ export function DeckEditor({ mode, initialDeck, submitting, onSubmit, onCancel }
                   {validation.keypoints ? (
                     <p className="text-xs text-warning-amber m-0">{validation.keypoints}</p>
                   ) : (
-                    <p className="text-sm text-text-muted mt-1">Keypoints help power the scoring rubric (2-6 required per card).</p>
+                    <p className="text-sm text-text-muted mt-1">Keypoints help power the scoring rubric (1-6 required per card).</p>
                   )}
                 </div>
               </div>
