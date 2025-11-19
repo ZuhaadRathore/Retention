@@ -1,6 +1,6 @@
 # Release Checklist
 
-Use this checklist when preparing a new Flash-AI release.
+Use this checklist when preparing a new Retention release.
 
 ## Pre-Release
 
@@ -55,7 +55,7 @@ Use this checklist when preparing a new Flash-AI release.
 
 ## Monitor Build
 
-- [ ] Open [GitHub Actions](https://github.com/YOUR_ORG/Flash-AI/actions)
+- [ ] Open [GitHub Actions](https://github.com/ZuhaadRathore/Retention/actions)
 - [ ] Watch Release workflow progress
 - [ ] Verify all three platform builds succeed:
   - [ ] Windows build completes
@@ -83,16 +83,16 @@ Draft your release notes covering:
 
 ## Finalize Release
 
-- [ ] Go to [GitHub Releases](https://github.com/YOUR_ORG/Flash-AI/releases)
+- [ ] Go to [GitHub Releases](https://github.com/ZuhaadRathore/Retention/releases)
 - [ ] Find draft release for vX.Y.Z
 - [ ] Paste prepared release notes
 - [ ] Verify all assets are present:
-  - [ ] `Flash-AI-vX.Y.Z-x64.msi` (Windows)
-  - [ ] `Flash-AI-vX.Y.Z-x64.msi.sha256`
-  - [ ] `Flash-AI-vX.Y.Z.dmg` (macOS)
-  - [ ] `Flash-AI-vX.Y.Z.dmg.sha256`
-  - [ ] `Flash-AI-vX.Y.Z.AppImage` (Linux)
-  - [ ] `Flash-AI-vX.Y.Z.AppImage.sha256`
+  - [ ] `Retention-vX.Y.Z-x64.msi` (Windows)
+  - [ ] `Retention-vX.Y.Z-x64.msi.sha256`
+  - [ ] `Retention-vX.Y.Z.dmg` (macOS)
+  - [ ] `Retention-vX.Y.Z.dmg.sha256`
+  - [ ] `Retention-vX.Y.Z.AppImage` (Linux)
+  - [ ] `Retention-vX.Y.Z.AppImage.sha256`
 - [ ] Check "Pre-release" if this is a beta/alpha version
 - [ ] Click "Publish release"
 
@@ -102,10 +102,10 @@ Draft your release notes covering:
 - [ ] Verify checksums match:
   ```bash
   # Windows (PowerShell)
-  certutil -hashfile Flash-AI-vX.Y.Z-x64.msi SHA256
+  certutil -hashfile Retention-vX.Y.Z-x64.msi SHA256
 
   # macOS/Linux
-  sha256sum Flash-AI-vX.Y.Z.dmg
+  sha256sum Retention-vX.Y.Z.dmg
   ```
 
 - [ ] Install and test on each platform

@@ -90,7 +90,7 @@ Currently, the download buttons are styled but not linked to actual files. To ad
 
 ```html
 <!-- Example for macOS -->
-<a href="https://github.com/yourusername/retention/releases/download/v1.0.0/retention-macos.dmg"
+<a href="https://github.com/ZuhaadRathore/Retention/releases/download/v1.0.0/retention-macos.dmg"
    class="download-btn p-6 rounded-2xl text-center group cursor-pointer">
     <!-- button content -->
 </a>

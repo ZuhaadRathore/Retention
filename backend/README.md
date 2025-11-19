@@ -1,6 +1,6 @@
-# Flash-AI Backend Server
+# Retention Backend Server
 
-A standalone FastAPI server that handles LLM inference and flashcard data management for Flash-AI.
+A standalone FastAPI server that handles LLM inference and flashcard data management for Retention.
 
 ## Features
 
@@ -87,7 +87,7 @@ Create `/etc/systemd/system/flashai.service`:
 
 ```ini
 [Unit]
-Description=Flash-AI Backend Server
+Description=Retention Backend Server
 After=network.target
 
 [Service]

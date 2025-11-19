@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Version bumping script for Flash-AI.
+Version bumping script for Retention.
 Updates version in package.json, Cargo.toml, tauri.conf.json, and pyproject.toml.
 """
 
@@ -122,7 +122,7 @@ def update_pyproject_toml(file_path: Path, new_version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Bump Flash-AI version across all project files"
+        description="Bump Retention version across all project files"
     )
 
     group = parser.add_mutually_exclusive_group(required=True)

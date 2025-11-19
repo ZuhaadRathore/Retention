@@ -1,5 +1,5 @@
 <#
-Bootstraps Flash-AI's Python + Node dependencies and launches the backend + frontend.
+Bootstraps Retention's Python + Node dependencies and launches the backend + frontend.
 #>
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest

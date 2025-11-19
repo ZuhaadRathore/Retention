@@ -72,7 +72,7 @@ echo  Deployment Complete!
 echo ================================
 echo.
 echo Your landing page will be live at:
-echo https://yourusername.github.io/Flash-AI/
+echo https://ZuhaadRathore.github.io/Retention/
 echo.
 echo Note: It may take a few minutes for GitHub Pages to update.
 echo.

@@ -37,10 +37,8 @@ GitHub will build and deploy your site. This usually takes 1-2 minutes.
 
 Your landing page will be available at:
 ```
-https://yourusername.github.io/Flash-AI/
+https://ZuhaadRathore.github.io/Retention/
 ```
-
-Replace `yourusername` with your GitHub username.
 
 ## What the Script Does
 
@@ -85,7 +83,7 @@ Add a CNAME record in your domain's DNS settings:
 ```
 Type: CNAME
 Name: www (or @)
-Value: yourusername.github.io
+Value: ZuhaadRathore.github.io
 ```
 
 ### 4. Configure on GitHub
@@ -100,7 +98,7 @@ Value: yourusername.github.io
 Update the download link in `landing-page/index.html` to:
 
 ```html
-<a href="https://github.com/yourusername/Flash-AI/releases/latest">
+<a href="https://github.com/ZuhaadRathore/Retention/releases/latest">
     Download Now
 </a>
 ```
@@ -123,7 +121,7 @@ chmod +x deploy-landing-page.sh
 
 Make sure you're in the project root directory:
 ```bash
-cd /path/to/Flash-AI
+cd /path/to/Retention
 deploy-landing-page.bat
 ```
 
@@ -146,7 +144,7 @@ git checkout main
 ### Changes Not Showing
 
 1. Clear browser cache (Ctrl+F5 or Cmd+Shift+R)
-2. Check if deployment succeeded: https://github.com/yourusername/Flash-AI/deployments
+2. Check if deployment succeeded: https://github.com/ZuhaadRathore/Retention/deployments
 3. Wait a few minutes for CDN cache to clear
 
 ## Advanced: GitHub Actions Auto-Deploy
@@ -185,7 +183,7 @@ This automatically deploys whenever you modify files in `landing-page/`.
 
 ### Check Deployment Status
 
-https://github.com/yourusername/Flash-AI/deployments
+https://github.com/ZuhaadRathore/Retention/deployments
 
 ### View GitHub Pages Logs
 

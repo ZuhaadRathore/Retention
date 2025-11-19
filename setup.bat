@@ -1,8 +1,8 @@
 @echo off
-REM Setup script for Flash-AI development environment
+REM Setup script for Retention development environment
 
 echo ====================================
-echo Flash-AI Development Setup
+echo Retention Development Setup
 echo ====================================
 echo.
 
