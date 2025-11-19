@@ -28,8 +28,11 @@ fi
 echo ""
 
 echo "[3/5] Switching to gh-pages branch..."
-if git checkout gh-pages 2>/dev/null; then
+if git show-ref --verify --quiet refs/heads/gh-pages; then
     echo "Using existing gh-pages branch"
+    git checkout gh-pages
+    # Clean the branch
+    git rm -rf . 2>/dev/null || true
 else
     echo "Creating new gh-pages branch..."
     git checkout --orphan gh-pages
@@ -37,19 +40,23 @@ else
 fi
 echo ""
 
-echo "[4/5] Copying landing page files..."
-cp landing-page/index.html index.html
-[ -f landing-page/README.md ] && cp landing-page/README.md landing-page-README.md
+echo "[4/5] Getting landing page from main branch..."
+# Checkout files from main branch
+git checkout $CURRENT_BRANCH -- landing-page/index.html
+[ -f landing-page/README.md ] && git checkout $CURRENT_BRANCH -- landing-page/README.md || true
 
-# Clean up any files that shouldn't be in gh-pages
-rm -rf src src-tauri python_sidecar node_modules dist .github 2>/dev/null || true
+# Move to root
+mv landing-page/index.html index.html
+[ -f landing-page/README.md ] && mv landing-page/README.md landing-page-README.md || true
+rm -rf landing-page
+
 echo ""
 
 echo "[5/5] Committing and pushing..."
 git add index.html
-[ -f landing-page-README.md ] && git add landing-page-README.md
+[ -f landing-page-README.md ] && git add landing-page-README.md || true
 git commit -m "Deploy landing page - $(date)"
-git push origin gh-pages
+git push origin gh-pages --force
 
 echo ""
 echo "================================"

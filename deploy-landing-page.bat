@@ -28,32 +28,34 @@ if %errorlevel% neq 0 (
 echo.
 
 echo [3/5] Switching to gh-pages branch...
-git checkout gh-pages 2>nul
-if %errorlevel% neq 0 (
+git show-ref --verify --quiet refs/heads/gh-pages
+if %errorlevel% equ 0 (
+    echo Using existing gh-pages branch
+    git checkout gh-pages
+    git rm -rf . 2>nul
+) else (
     echo Creating new gh-pages branch...
     git checkout --orphan gh-pages
     git rm -rf . 2>nul
 )
 echo.
 
-echo [4/5] Copying landing page files...
-copy /Y landing-page\index.html index.html >nul
-if exist landing-page\README.md copy /Y landing-page\README.md landing-page-README.md >nul
+echo [4/5] Getting landing page from main branch...
+REM Checkout files from main branch
+git checkout %CURRENT_BRANCH% -- landing-page/index.html
+if exist landing-page\README.md git checkout %CURRENT_BRANCH% -- landing-page/README.md
 
-REM Clean up any files that shouldn't be in gh-pages
-if exist src rmdir /s /q src 2>nul
-if exist src-tauri rmdir /s /q src-tauri 2>nul
-if exist python_sidecar rmdir /s /q python_sidecar 2>nul
-if exist node_modules rmdir /s /q node_modules 2>nul
-if exist dist rmdir /s /q dist 2>nul
-if exist .github rmdir /s /q .github 2>nul
+REM Move to root
+move /Y landing-page\index.html index.html >nul
+if exist landing-page\README.md move /Y landing-page\README.md landing-page-README.md >nul
+rmdir /s /q landing-page 2>nul
 
 echo.
 echo [5/5] Committing and pushing...
 git add index.html
 if exist landing-page-README.md git add landing-page-README.md
 git commit -m "Deploy landing page - %date% %time%"
-git push origin gh-pages
+git push origin gh-pages --force
 
 if %errorlevel% neq 0 (
     echo.
