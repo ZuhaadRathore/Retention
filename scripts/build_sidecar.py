@@ -8,9 +8,9 @@ from pathlib import Path
 
 
 PLATFORM_TARGETS = {
-    "windows": ("windows", "retention-sidecar.exe"),
-    "linux": ("linux", "retention-sidecar"),
-    "macos": ("macos", "retention-sidecar")
+    "windows": ("windows", "retention-sidecar.exe", "retention-sidecar-x86_64-pc-windows-msvc.exe"),
+    "linux": ("linux", "retention-sidecar", "retention-sidecar-x86_64-unknown-linux-gnu"),
+    "macos": ("macos", "retention-sidecar", "retention-sidecar-aarch64-apple-darwin")
 }
 
 
@@ -45,18 +45,40 @@ def build_sidecar(target: str, spec_path: Path, dist_root: Path) -> Path:
     ]
     subprocess.run(cmd, check=True, cwd=str(spec_path.parent))
 
-    _, binary_name = PLATFORM_TARGETS[target]
-    built_binary = dist_dir / binary_name
+    _, binary_name, _ = PLATFORM_TARGETS[target]
+    # PyInstaller onedir mode creates a folder, exe is inside it
+    built_binary = dist_dir / "retention-sidecar" / binary_name
     if not built_binary.exists():
         raise FileNotFoundError(f"Expected PyInstaller output {built_binary} was not produced.")
     return built_binary
 
 
 def stage_binary(source: Path, target: str, project_root: Path) -> Path:
-    dest_dir = project_root / "src-tauri" / "binaries" / PLATFORM_TARGETS[target][0]
+    _, _, tauri_binary_name = PLATFORM_TARGETS[target]
+    # Tauri expects binaries directly in src-tauri/binaries/, not in platform subdirectories
+    dest_dir = project_root / "src-tauri" / "binaries"
     dest_dir.mkdir(parents=True, exist_ok=True)
-    destination = dest_dir / source.name
-    shutil.copy2(source, destination)
+
+    # For onedir builds, copy the entire sidecar folder
+    # source points to the exe, we need to copy its parent directory
+    source_dir = source.parent
+    destination = dest_dir / tauri_binary_name
+
+    # Copy the entire directory structure
+    if source_dir.name == "retention-sidecar":
+        # Copy the exe with Tauri's expected name
+        shutil.copy2(source, destination)
+        # Copy the _internal folder if it exists
+        internal_src = source_dir / "_internal"
+        if internal_src.exists():
+            internal_dest = dest_dir / "_internal"
+            if internal_dest.exists():
+                shutil.rmtree(internal_dest)
+            shutil.copytree(internal_src, internal_dest)
+    else:
+        # Fallback to simple copy for onefile builds
+        shutil.copy2(source, destination)
+
     return destination
 
 

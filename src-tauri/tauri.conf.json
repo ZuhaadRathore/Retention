@@ -5,7 +5,7 @@
   "build": {
     "beforeDevCommand": "pnpm web:dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm web:build && python build-sidecar.py",
+    "beforeBuildCommand": "pnpm web:build",
     "frontendDist": "../dist"
   },
   "bundle": {
@@ -18,11 +18,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": {
-      "retention-sidecar": "../python_sidecar/dist/retention-sidecar/"
-    },
     "externalBin": [
       "binaries/retention-sidecar"
+    ],
+    "resources": [
+      "binaries/_internal/*"
     ],
     "windows": {
       "certificateThumbprint": null,

@@ -22,7 +22,12 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm install)",
       "Bash(pnpm check:*)",
-      "Bash(del \"src\\hooks\\useDarkMode.ts\")"
+      "Bash(del \"src\\hooks\\useDarkMode.ts\")",
+      "Bash(cmd.exe /c \"deploy-landing-page.bat\")",
+      "Bash(git restore:*)",
+      "Bash(pnpm run sidecar:build:*)",
+      "Bash(pnpm run release:*)",
+      "Bash(pnpm tauri build:*)"
     ],
     "deny": [],
     "ask": []

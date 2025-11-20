@@ -71,10 +71,14 @@ if (!pythonCmd) {
   process.exit(1);
 }
 
-const result = spawnSync(pythonCmd, [script, ...args], {
-  stdio: "inherit",
-  cwd: projectRoot
-});
+const result = spawnSync(
+  pythonCmd,
+  [script, "--spec", "python_sidecar/sidecar.spec", ...args],
+  {
+    stdio: "inherit",
+    cwd: projectRoot
+  }
+);
 
 if (result.error) {
   console.error(result.error.message);
