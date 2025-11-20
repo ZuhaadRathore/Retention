@@ -144,31 +144,24 @@
     <!-- Hero Section -->
     <section class="container mx-auto px-6 py-20 lg:py-32">
         <div class="max-w-5xl mx-auto text-center">
-            <div class="inline-block flashcard px-8 py-3 rounded-full mb-6">
-                <span class="text-[#8B4513] font-semibold text-sm uppercase tracking-wide">AI-Powered Learning</span>
-            </div>
             <h2 class="text-5xl lg:text-7xl font-bold text-[#654321] mb-6 hand-drawn leading-tight">
-                Master Anything with<br/>Smart Flashcards
+                Flashcards with AI Grading
             </h2>
             <p class="text-xl text-[#654321]/80 mb-12 max-w-2xl mx-auto leading-relaxed">
-                Retention uses artificial intelligence to help you learn faster and retain more.
-                Create flashcards, study with AI-powered feedback, and track your progress.
+                Offline desktop app. Bundled AI model grades your answers using semantic similarity and keypoint matching. No API keys, no subscription.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <a href="https://github.com/ZuhaadRathore/Retention/releases/latest/download/Retention_0.1.0_x64-setup.exe" target="_blank" rel="noopener noreferrer" class="hand-drawn-btn text-white px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center space-x-2" download>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span>Download Now</span>
+                    <span>Download for Windows</span>
                 </a>
                 <a href="#features" class="download-btn text-[#8B4513] px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center space-x-2">
-                    <span>Learn More</span>
+                    <span>See Features</span>
                     <span>→</span>
                 </a>
             </div>
-            <p class="mt-6 text-sm text-[#654321]/60">
-                Available for macOS, Windows, and Linux
-            </p>
         </div>
     </section>
 
@@ -177,11 +170,8 @@
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-16">
                 <h3 class="text-4xl lg:text-5xl font-bold text-[#654321] mb-4 hand-drawn">
-                    Why Choose Retention?
+                    Features
                 </h3>
-                <p class="text-lg text-[#654321]/70">
-                    Powerful features designed to supercharge your learning
-                </p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -197,9 +187,9 @@
                             <circle cx="12" cy="3" r="1.5" fill="currentColor"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">AI-Powered Grading</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Semantic Similarity Scoring</h4>
                     <p class="text-[#654321]/70">
-                        Get instant, intelligent feedback on your answers. Our AI understands context and provides detailed corrections.
+                        Uses sentence-transformers/all-MiniLM-L6-v2 model to compute cosine similarity between your answer and the expected answer. Combines embedding similarity (65%) with keypoint coverage (35%).
                     </p>
                 </div>
 
@@ -207,14 +197,13 @@
                 <div class="feature-card p-8 rounded-2xl">
                     <div class="mb-4">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-[#8B4513]">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M8 7h8M8 11h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Smart Deck Management</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Keypoint-Based Learning</h4>
                     <p class="text-[#654321]/70">
-                        Organize your flashcards into decks. Track progress, stats, and performance for each deck.
+                        Define 1-6 keypoints per card. AI checks if your answer covers each keypoint using 0.58 similarity threshold. Get feedback on which keypoints you missed.
                     </p>
                 </div>
 
@@ -222,13 +211,16 @@
                 <div class="feature-card p-8 rounded-2xl">
                     <div class="mb-4">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-[#8B4513]">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M15 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 2L12 22M2 12L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="6" r="2" fill="currentColor"/>
+                            <circle cx="12" cy="18" r="2" fill="currentColor"/>
+                            <circle cx="6" cy="12" r="2" fill="currentColor"/>
+                            <circle cx="18" cy="12" r="2" fill="currentColor"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Keypoint Learning</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">4 Grading Modes</h4>
                     <p class="text-[#654321]/70">
-                        Define key points for each card. AI validates your understanding against these critical concepts.
+                        Lenient, Strict, Keywords-only, or Hybrid grading per card. Score thresholds: Correct (0.86+), Almost (0.76+), Missing keypoints (0.72+), Incorrect (&lt;0.72).
                     </p>
                 </div>
 
@@ -236,13 +228,15 @@
                 <div class="feature-card p-8 rounded-2xl">
                     <div class="mb-4">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-[#8B4513]">
-                            <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M18 17V9M13 17v-4M8 17v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <line x1="9" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="9" y1="17" x2="15" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Progress Tracking</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Alternative Answers</h4>
                     <p class="text-[#654321]/70">
-                        Monitor your learning journey with detailed stats, attempt history, and performance analytics.
+                        Define multiple acceptable answers per card. Exact match with any alternative answer = instant 100% score without AI computation.
                     </p>
                 </div>
 
@@ -250,16 +244,13 @@
                 <div class="feature-card p-8 rounded-2xl">
                     <div class="mb-4">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-[#8B4513]">
-                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <circle cx="6.5" cy="11.5" r="1.5" fill="currentColor"/>
-                            <circle cx="9.5" cy="7.5" r="1.5" fill="currentColor"/>
-                            <circle cx="14.5" cy="7.5" r="1.5" fill="currentColor"/>
-                            <circle cx="17.5" cy="11.5" r="1.5" fill="currentColor"/>
+                            <path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18 17V9M13 17v-4M8 17v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Beautiful Design</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Detailed Attempt History</h4>
                     <p class="text-[#654321]/70">
-                        Paper-themed interface with hand-drawn elements creates an engaging, distraction-free learning environment.
+                        Every attempt logs score, verdict, cosine similarity, keypoint coverage, AI feedback, and timestamp. Export/import decks as JSON with full history.
                     </p>
                 </div>
 
@@ -270,9 +261,9 @@
                             <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" fill="currentColor"/>
                         </svg>
                     </div>
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Offline-First</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-3">Fully Offline</h4>
                     <p class="text-[#654321]/70">
-                        Native desktop app that works offline. Your data stays on your device, synced locally.
+                        AI model bundled with PyInstaller. No internet required, no API keys, no subscription. All data stored locally in SQLite. Built with Tauri + React + FastAPI.
                     </p>
                 </div>
             </div>
@@ -284,10 +275,10 @@
         <div class="max-w-4xl mx-auto">
             <div class="flashcard p-12 rounded-3xl text-center">
                 <h3 class="text-4xl lg:text-5xl font-bold text-[#654321] mb-4 hand-drawn">
-                    Download Retention
+                    Download
                 </h3>
                 <p class="text-lg text-[#654321]/70 mb-12">
-                    Choose your platform and start learning smarter today
+                    Windows available now. macOS and Linux coming soon.
                 </p>
 
                 <div class="grid md:grid-cols-3 gap-6">
@@ -351,44 +342,43 @@
         <div class="max-w-3xl mx-auto">
             <div class="feature-card p-12 rounded-3xl">
                 <h3 class="text-4xl font-bold text-[#654321] mb-6 hand-drawn text-center">
-                    About Retention
+                    How It Works
                 </h3>
                 <div class="space-y-4 text-[#654321]/80 leading-relaxed">
                     <p>
-                        Retention is a modern flashcard application that combines the proven effectiveness of
-                        spaced repetition with the power of artificial intelligence. Whether you're a student
-                        preparing for exams, a professional learning new skills, or a lifelong learner exploring
-                        new topics, Retention adapts to your learning style.
+                        <strong>1. Create cards:</strong> Write a prompt, expected answer, and 1-6 keypoints. Optionally add alternative acceptable answers.
                     </p>
                     <p>
-                        Built with cutting-edge technology including React, TypeScript, and Tauri, Retention
-                        delivers a native desktop experience that's fast, reliable, and works completely offline.
-                        Your data stays on your device, giving you full control and privacy.
+                        <strong>2. Study:</strong> Type your answer. The AI computes semantic similarity and checks keypoint coverage.
                     </p>
                     <p>
-                        The AI-powered grading system provides intelligent feedback on your answers, helping you
-                        understand not just what you got wrong, but why. This accelerates learning and helps
-                        build deeper understanding of complex topics.
+                        <strong>3. Review feedback:</strong> See your score (0-1.0), verdict (correct/almost/missing/incorrect), which keypoints you missed, and AI-generated explanation.
+                    </p>
+                    <p>
+                        <strong>4. Track progress:</strong> Every attempt is logged with full metrics. Export decks as JSON to share or backup.
                     </p>
                 </div>
 
                 <div class="mt-8 pt-8 border-t border-[#8B4513]/20">
-                    <h4 class="text-xl font-bold text-[#8B4513] mb-4">Key Technologies</h4>
+                    <h4 class="text-xl font-bold text-[#8B4513] mb-4">Tech Stack</h4>
                     <div class="flex flex-wrap gap-3">
                         <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
                             React + TypeScript
                         </span>
                         <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
-                            Tauri Desktop
+                            Tauri (Rust)
                         </span>
                         <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
-                            FastAPI Backend
+                            FastAPI (Python)
                         </span>
                         <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
-                            AI-Powered
+                            PyInstaller
                         </span>
                         <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
-                            Tailwind CSS
+                            SQLite
+                        </span>
+                        <span class="px-4 py-2 bg-[#FFF8E7] border-2 border-[#8B4513]/30 rounded-lg text-sm font-semibold text-[#654321]">
+                            sentence-transformers
                         </span>
                     </div>
                 </div>
@@ -411,7 +401,7 @@
                             <h1 class="text-2xl font-bold text-[#8B4513] hand-drawn">Retention</h1>
                         </div>
                         <p class="text-[#654321]/70 mb-4">
-                            Smart flashcard learning powered by AI
+                            Flashcard app with offline AI grading
                         </p>
                     </div>
 
